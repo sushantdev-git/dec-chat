@@ -8,12 +8,12 @@ import '../state/identity_state.dart';
 import '../state/panic_controller.dart';
 import '../state/peers_notifier.dart';
 import '../state/timeline_notifier.dart';
-import '../theme/signal_theme.dart';
+import '../theme/app_theme.dart';
 import '../widgets/edit_profile_sheet.dart';
 import 'chat_screen.dart';
 import 'peer_directory_screen.dart';
 
-/// Main conversation thread list adopting the Signal UI design pattern.
+/// Main conversation thread list adopting a clean minimalist design.
 class ConversationListScreen extends ConsumerWidget {
   const ConversationListScreen({super.key});
 
@@ -23,17 +23,24 @@ class ConversationListScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: SignalTheme.darkCard,
-        title: const Text('Join Channel'),
+        backgroundColor: AppTheme.darkCardElevated,
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppTheme.squircleLarge,
+          side: BorderSide(color: AppTheme.darkBorderSubtle, width: 0.8),
+        ),
+        title: const Text(
+          'Join Channel',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Enter a public channel name or geohash location channel (e.g. #9q8yy):',
-              style: TextStyle(fontSize: 13, color: SignalTheme.textSecondary),
+              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             TextField(
               controller: controller,
               autofocus: true,
@@ -46,12 +53,13 @@ class ConversationListScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: SignalTheme.signalBlue,
+              backgroundColor: AppTheme.primaryBlue,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
               final text = controller.text.trim();
@@ -77,27 +85,32 @@ class ConversationListScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: SignalTheme.darkCard,
+        backgroundColor: AppTheme.darkCardElevated,
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppTheme.squircleLarge,
+          side: BorderSide(color: AppTheme.darkBorderSubtle, width: 0.8),
+        ),
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: SignalTheme.panicRed, size: 26),
+            Icon(Icons.warning_amber_rounded, color: AppTheme.panicRed, size: 24),
             SizedBox(width: 8),
-            Text('Emergency Panic Wipe', style: TextStyle(color: SignalTheme.panicRed)),
+            Text('Emergency Panic Wipe', style: TextStyle(color: AppTheme.panicRed, fontSize: 18)),
           ],
         ),
         content: const Text(
           'This will instantaneously zeroize and delete all in-memory message feeds, wipe active peer sessions, and regenerate a fresh ephemeral cryptographic identity. There is no undo.',
-          style: TextStyle(fontSize: 13, color: SignalTheme.textSecondary, height: 1.4),
+          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: SignalTheme.panicRed,
+              backgroundColor: AppTheme.panicRed,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -106,7 +119,7 @@ class ConversationListScreen extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Panic wipe completed: all keys and timelines zeroized.'),
-                    backgroundColor: SignalTheme.panicRed,
+                    backgroundColor: AppTheme.panicRed,
                   ),
                 );
               }
@@ -136,35 +149,65 @@ class ConversationListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: () => EditProfileSheet.show(context),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: SignalTheme.signalBlue,
-                child: Text(
-                  identity.nickname.isNotEmpty ? identity.nickname[0].toUpperCase() : '?',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlue,
+                  borderRadius: AppTheme.squircleMedium,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    identity.nickname.isNotEmpty ? identity.nickname[0].toUpperCase() : '?',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                  ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Text(
-                          identity.nickname,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                        Flexible(
+                          child: Text(
+                            identity.nickname,
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.edit, size: 12, color: SignalTheme.textMuted),
+                        const Icon(Icons.edit, size: 12, color: AppTheme.textMuted),
                       ],
                     ),
-                    Text(
-                      '${identity.peerIdHex.substring(0, 8)} • BLE Mesh Online',
-                      style: const TextStyle(fontSize: 11, color: SignalTheme.bleMeshBlue),
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.verifiedGreen,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${identity.peerIdHex.substring(0, 8)} • BLE Mesh Online',
+                          style: const TextStyle(fontSize: 11, color: AppTheme.bleMeshBlue),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -174,7 +217,7 @@ class ConversationListScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: SignalTheme.textPrimary),
+            icon: const Icon(Icons.search, color: AppTheme.textPrimary),
             tooltip: 'Search peers',
             onPressed: () => Navigator.push(
               context,
@@ -182,17 +225,18 @@ class ConversationListScreen extends ConsumerWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.emergency_outlined, color: SignalTheme.panicRed),
+            icon: const Icon(Icons.emergency_outlined, color: AppTheme.panicRed),
             tooltip: 'Emergency Panic Wipe',
             onPressed: () => _showPanicConfirmDialog(context, ref),
           ),
         ],
       ),
       body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 6),
         children: [
           // Channels Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -202,20 +246,24 @@ class ConversationListScreen extends ConsumerWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.1,
-                    color: SignalTheme.textMuted,
+                    color: AppTheme.textMuted,
                   ),
                 ),
                 InkWell(
+                  borderRadius: BorderRadius.circular(6),
                   onTap: () => _showJoinChannelDialog(context, ref),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.add, size: 14, color: SignalTheme.signalBlue),
-                      SizedBox(width: 2),
-                      Text(
-                        'Join',
-                        style: TextStyle(fontSize: 12, color: SignalTheme.signalBlue, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      children: [
+                        Icon(Icons.add, size: 14, color: AppTheme.bleMeshBlue),
+                        SizedBox(width: 2),
+                        Text(
+                          'Join',
+                          style: TextStyle(fontSize: 12, color: AppTheme.bleMeshBlue, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -229,28 +277,37 @@ class ConversationListScreen extends ConsumerWidget {
             final isLocation = Geohash.isLocationChannel(ch);
 
             return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: isLocation ? const Color(0xFF1E3A5F) : SignalTheme.darkCard,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isLocation ? const Color(0xFF132B45) : AppTheme.darkCard,
+                  borderRadius: AppTheme.squircleMedium,
+                  border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
+                ),
                 child: Icon(
                   isLocation ? Icons.place : Icons.tag,
-                  color: isLocation ? SignalTheme.bleMeshBlue : Colors.white70,
+                  color: isLocation ? AppTheme.bleMeshBlue : AppTheme.textSecondary,
                   size: 20,
                 ),
               ),
               title: Text(
                 ch,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
               subtitle: Text(
-                lastMsg != null ? '${lastMsg.senderNickname}: ${lastMsg.content}' : (isLocation ? 'Geohash Location Channel' : 'Public mesh room'),
+                lastMsg != null
+                    ? '${lastMsg.senderNickname}: ${lastMsg.content}'
+                    : (isLocation ? 'Geohash Location Channel' : 'Public mesh room'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, color: SignalTheme.textSecondary),
+                style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               ),
               trailing: lastMsg != null
                   ? Text(
                       '${lastMsg.timestamp.hour.toString().padLeft(2, '0')}:${lastMsg.timestamp.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(fontSize: 11, color: SignalTheme.textMuted),
+                      style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
                     )
                   : null,
               onTap: () {
@@ -266,14 +323,14 @@ class ConversationListScreen extends ConsumerWidget {
 
           // Direct Messages Header
           const Padding(
-            padding: EdgeInsets.fromLTRB(16, 20, 16, 6),
+            padding: EdgeInsets.fromLTRB(16, 22, 16, 6),
             child: Text(
               'DIRECT MESSAGES',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.1,
-                color: SignalTheme.textMuted,
+                color: AppTheme.textMuted,
               ),
             ),
           ),
@@ -285,7 +342,7 @@ class ConversationListScreen extends ConsumerWidget {
                 child: Text(
                   'No direct chats yet.\nTap the radar button below to discover nearby peers.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: SignalTheme.textMuted, fontSize: 13, height: 1.4),
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
                 ),
               ),
             )
@@ -297,19 +354,26 @@ class ConversationListScreen extends ConsumerWidget {
               final lastMsg = msgs.isNotEmpty ? msgs.last : null;
 
               return ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: SignalTheme.darkCard,
-                  child: Icon(Icons.lock, size: 18, color: SignalTheme.signalBlue),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkCard,
+                    borderRadius: AppTheme.squircleMedium,
+                    border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
+                  ),
+                  child: const Icon(Icons.lock, size: 18, color: AppTheme.primaryBlue),
                 ),
                 title: Row(
                   children: [
                     Text(
                       nickname,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                     ),
                     if (peer?.isVerified ?? false) ...[
                       const SizedBox(width: 4),
-                      const Icon(Icons.verified, size: 16, color: SignalTheme.verifiedGreen),
+                      const Icon(Icons.verified, size: 15, color: AppTheme.verifiedGreen),
                     ],
                   ],
                 ),
@@ -317,7 +381,7 @@ class ConversationListScreen extends ConsumerWidget {
                   lastMsg?.content ?? 'Encrypted conversation',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: SignalTheme.textSecondary),
+                  style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                 ),
                 onTap: () {
                   Navigator.push(
@@ -332,8 +396,10 @@ class ConversationListScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: SignalTheme.signalBlue,
+        backgroundColor: AppTheme.primaryBlue,
         foregroundColor: Colors.white,
+        elevation: 4,
+        shape: const RoundedRectangleBorder(borderRadius: AppTheme.pill),
         icon: const Icon(Icons.radar),
         label: Text('Peers (${peersState.allPeers.length})'),
         onPressed: () {

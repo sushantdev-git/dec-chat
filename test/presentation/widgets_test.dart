@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dec_chat/domain/enums/transport_medium.dart';
 import 'package:dec_chat/presentation/models/chat_message.dart';
 import 'package:dec_chat/presentation/models/peer_model.dart';
-import 'package:dec_chat/presentation/theme/signal_theme.dart';
+import 'package:dec_chat/presentation/theme/app_theme.dart';
 import 'package:dec_chat/presentation/views/chat_screen.dart';
 import 'package:dec_chat/presentation/views/conversation_list_screen.dart';
 import 'package:dec_chat/presentation/widgets/message_bubble.dart';
@@ -13,7 +13,7 @@ import 'package:dec_chat/presentation/widgets/safety_number_card.dart';
 import 'package:dec_chat/presentation/widgets/transport_badge.dart';
 
 void main() {
-  group('Signal UI Custom Widgets', () {
+  group('Minimalist Custom UI Widgets', () {
     testWidgets('TransportBadge renders BLE Mesh and Nostr indicators', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -66,7 +66,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: SignalTheme.darkTheme,
+          theme: AppTheme.darkTheme,
           home: Scaffold(
             body: ListView(
               children: [
@@ -90,6 +90,35 @@ void main() {
       expect(find.byIcon(Icons.done_all), findsOneWidget);
     });
 
+    testWidgets('MessageBubble clusters correctly with BubblePosition', (tester) async {
+      final msg = ChatMessage(
+        id: '1',
+        senderId: 'local',
+        senderNickname: 'Me',
+        content: 'Clustered message',
+        timestamp: DateTime.now(),
+        isOutgoing: true,
+        channelOrPeerId: 'peer1',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: Column(
+              children: [
+                MessageBubble(message: msg, position: BubblePosition.first),
+                MessageBubble(message: msg, position: BubblePosition.middle),
+                MessageBubble(message: msg, position: BubblePosition.last),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Clustered message'), findsNWidgets(3));
+    });
+
     testWidgets('SafetyNumberCard displays 12 blocks and triggers verification toggle', (tester) async {
       var toggleCalled = false;
       final peer = PeerModel(
@@ -102,7 +131,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: SignalTheme.darkTheme,
+          theme: AppTheme.darkTheme,
           home: Scaffold(
             body: SafetyNumberCard(
               peer: peer,

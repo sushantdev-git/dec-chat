@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/signal_theme.dart';
+import '../theme/app_theme.dart';
 import '../utils/chat_command.dart';
 
 /// Floating autocompletion overlay displayed when user types a slash command prefix ('/').
@@ -20,16 +20,16 @@ class SlashCommandPopup extends StatelessWidget {
 
     return Container(
       constraints: const BoxConstraints(maxHeight: 220),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: SignalTheme.darkCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: SignalTheme.darkBorder, width: 0.8),
+        color: AppTheme.darkCardElevated,
+        borderRadius: AppTheme.squircleLarge,
+        border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 14,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
@@ -38,21 +38,22 @@ class SlashCommandPopup extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         itemCount: suggestions.length,
         separatorBuilder: (_, __) => Divider(
-          color: Colors.white.withValues(alpha: 0.06),
+          color: Colors.white.withValues(alpha: 0.05),
           height: 1,
         ),
         itemBuilder: (context, index) {
           final item = suggestions[index];
           return InkWell(
+            borderRadius: BorderRadius.circular(10),
             onTap: () => onSelect(item),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
-                      color: SignalTheme.signalBlue.withValues(alpha: 0.2),
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -61,7 +62,7 @@ class SlashCommandPopup extends StatelessWidget {
                         fontFamily: 'monospace',
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: SignalTheme.bleMeshBlue,
+                        color: AppTheme.bleMeshBlue,
                       ),
                     ),
                   ),
@@ -75,14 +76,14 @@ class SlashCommandPopup extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: SignalTheme.textPrimary,
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                         Text(
                           item.description,
                           style: const TextStyle(
                             fontSize: 11,
-                            color: SignalTheme.textSecondary,
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                       ],

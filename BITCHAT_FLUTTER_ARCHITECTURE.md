@@ -287,7 +287,7 @@ dec_chat/
 │   │   │   ├── peer_providers.dart          # Discovered peer list & radar
 │   │   │   └── panic_controller.dart        # Emergency wipe coordinator
 │   │   ├── theme/
-│   │   │   └── signal_theme.dart            # Clean, high-contrast Signal aesthetic
+│   │   │   └── app_theme.dart               # Clean, minimal dark Zinc aesthetic
 │   │   └── views/
 │   │       ├── conversation_list_view.dart  # Signal-style thread list
 │   │       ├── chat_screen.dart             # Message bubbles, lock badges, input

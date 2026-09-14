@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/identity_state.dart';
-import '../theme/signal_theme.dart';
+import '../theme/app_theme.dart';
 
 /// Modal bottom sheet for editing the user's display name and optional phone number.
 class EditProfileSheet extends ConsumerStatefulWidget {
@@ -11,9 +11,9 @@ class EditProfileSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: SignalTheme.darkCard,
+      backgroundColor: AppTheme.darkCardElevated,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => const EditProfileSheet(),
     );
@@ -85,7 +85,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Profile updated'),
-          backgroundColor: SignalTheme.signalBlueDark,
+          backgroundColor: AppTheme.primaryBlueDark,
           duration: Duration(seconds: 2),
         ),
       );
@@ -96,7 +96,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
   Widget build(BuildContext context) {
     final viewInsets = MediaQuery.of(context).viewInsets;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, viewInsets.bottom + 20),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, viewInsets.bottom + 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,11 +104,11 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
           // Handle bar
           Center(
             child: Container(
-              width: 40,
+              width: 36,
               height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: SignalTheme.darkBorder,
+                color: Colors.white24,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -119,7 +119,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: SignalTheme.textPrimary,
+              color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 20),
@@ -127,7 +127,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
           // Nickname field
           const Text(
             'Display Name',
-            style: TextStyle(fontSize: 12, color: SignalTheme.textSecondary, fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           TextField(
@@ -139,7 +139,15 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
               hintText: 'Your name',
               errorText: _nicknameError,
               counterText: '',
-              prefixIcon: const Icon(Icons.badge_outlined, color: SignalTheme.textSecondary, size: 20),
+              prefixIcon: const Icon(Icons.badge_outlined, color: AppTheme.textSecondary, size: 20),
+              border: const OutlineInputBorder(
+                borderRadius: AppTheme.squircleMedium,
+                borderSide: BorderSide(color: AppTheme.darkBorderSubtle),
+              ),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: AppTheme.squircleMedium,
+                borderSide: BorderSide(color: AppTheme.darkBorderSubtle),
+              ),
             ),
             onChanged: (_) {
               if (_nicknameError != null) setState(() => _nicknameError = null);
@@ -150,7 +158,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
           // Phone number field
           const Text(
             'Phone Number  (optional — shared with nearby peers)',
-            style: TextStyle(fontSize: 12, color: SignalTheme.textSecondary, fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           TextField(
@@ -160,12 +168,20 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
             decoration: InputDecoration(
               hintText: '+91 98765 43210',
               errorText: _phoneError,
-              prefixIcon: const Icon(Icons.phone_outlined, color: SignalTheme.textSecondary, size: 20),
+              prefixIcon: const Icon(Icons.phone_outlined, color: AppTheme.textSecondary, size: 20),
+              border: const OutlineInputBorder(
+                borderRadius: AppTheme.squircleMedium,
+                borderSide: BorderSide(color: AppTheme.darkBorderSubtle),
+              ),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: AppTheme.squircleMedium,
+                borderSide: BorderSide(color: AppTheme.darkBorderSubtle),
+              ),
               suffixIcon: ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _phoneCtrl,
                 builder: (_, val, __) => val.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18, color: SignalTheme.textSecondary),
+                        icon: const Icon(Icons.clear, size: 18, color: AppTheme.textSecondary),
                         onPressed: () {
                           _phoneCtrl.clear();
                           setState(() => _phoneError = null);
@@ -187,8 +203,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
               Expanded(
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: SignalTheme.textSecondary,
-                    side: const BorderSide(color: SignalTheme.darkBorder),
+                    foregroundColor: AppTheme.textSecondary,
+                    side: const BorderSide(color: AppTheme.darkBorderSubtle),
+                    shape: const RoundedRectangleBorder(borderRadius: AppTheme.pill),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Cancel'),
@@ -198,8 +216,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: SignalTheme.signalBlue,
+                    backgroundColor: AppTheme.primaryBlue,
                     foregroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(borderRadius: AppTheme.pill),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   onPressed: _save,
                   child: const Text('Save'),

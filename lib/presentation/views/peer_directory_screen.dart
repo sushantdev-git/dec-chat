@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/identity_state.dart';
 import '../state/peers_notifier.dart';
-import '../theme/signal_theme.dart';
+import '../theme/app_theme.dart';
 import '../widgets/edit_profile_sheet.dart';
 import '../widgets/transport_badge.dart';
 import 'chat_screen.dart';
@@ -57,7 +57,7 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Peer ID copied to clipboard'),
-        backgroundColor: SignalTheme.signalBlueDark,
+        backgroundColor: AppTheme.primaryBlueDark,
         duration: Duration(seconds: 2),
       ),
     );
@@ -83,29 +83,35 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Discovered Peers'),
+        title: const Text('Discovered Peers', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           // ── Your Identity Card ──────────────────────────────────────────
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            padding: const EdgeInsets.all(14),
+            margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: SignalTheme.darkCard,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: SignalTheme.signalBlueDark.withValues(alpha: 0.5)),
+              color: AppTheme.darkCard,
+              borderRadius: AppTheme.squircleLarge,
+              border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: SignalTheme.signalBlueDark,
-                  child: Text(
-                    identity.nickname.isNotEmpty ? identity.nickname[0].toUpperCase() : '?',
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.primaryBlueDark,
+                    borderRadius: AppTheme.squircleMedium,
+                  ),
+                  child: Center(
+                    child: Text(
+                      identity.nickname.isNotEmpty ? identity.nickname[0].toUpperCase() : '?',
+                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -121,24 +127,24 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: SignalTheme.textPrimary,
+                                color: AppTheme.textPrimary,
                               ),
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: SignalTheme.signalBlue.withValues(alpha: 0.2),
+                              color: AppTheme.primaryBlue.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Text(
                               'You',
-                              style: TextStyle(fontSize: 10, color: SignalTheme.bleMeshBlue),
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.bleMeshBlue),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       // Formatted peer ID with copy button
                       Row(
                         children: [
@@ -148,7 +154,7 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                               style: const TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 12,
-                                color: SignalTheme.textSecondary,
+                                color: AppTheme.textSecondary,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -157,21 +163,21 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                             onTap: () => _copyId(context, identity.peerIdHex),
                             child: const Tooltip(
                               message: 'Copy peer ID',
-                              child: Icon(Icons.copy, size: 14, color: SignalTheme.textMuted),
+                              child: Icon(Icons.copy, size: 14, color: AppTheme.textMuted),
                             ),
                           ),
                         ],
                       ),
                       // Phone number (if set)
                       if (identity.phoneNumber != null && identity.phoneNumber!.isNotEmpty) ...[
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.phone_outlined, size: 12, color: SignalTheme.textSecondary),
-                            const SizedBox(width: 4),
+                            const Icon(Icons.phone_outlined, size: 13, color: AppTheme.textSecondary),
+                            const SizedBox(width: 5),
                             Text(
                               identity.phoneNumber!,
-                              style: const TextStyle(fontSize: 12, color: SignalTheme.textSecondary),
+                              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                             ),
                           ],
                         ),
@@ -181,7 +187,7 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                 ),
                 // Edit profile button
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20, color: SignalTheme.textSecondary),
+                  icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.textSecondary),
                   tooltip: 'Edit profile',
                   onPressed: () => EditProfileSheet.show(context),
                 ),
@@ -191,17 +197,17 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
 
           // ── Search Bar ──────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             child: TextField(
               controller: _searchCtrl,
               onChanged: (v) => setState(() => _query = v.trim()),
               decoration: InputDecoration(
                 hintText: 'Search by name, phone, or peer ID…',
-                hintStyle: const TextStyle(fontSize: 13),
-                prefixIcon: const Icon(Icons.search, size: 20, color: SignalTheme.textSecondary),
+                hintStyle: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                prefixIcon: const Icon(Icons.search, size: 20, color: AppTheme.textSecondary),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18, color: SignalTheme.textSecondary),
+                        icon: const Icon(Icons.clear, size: 18, color: AppTheme.textSecondary),
                         onPressed: () {
                           _searchCtrl.clear();
                           setState(() => _query = '');
@@ -211,14 +217,18 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 filled: true,
-                fillColor: SignalTheme.darkCard,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: SignalTheme.darkBorder),
+                fillColor: AppTheme.darkCard,
+                border: const OutlineInputBorder(
+                  borderRadius: AppTheme.pill,
+                  borderSide: BorderSide(color: AppTheme.darkBorderSubtle),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: SignalTheme.darkBorder),
+                enabledBorder: const OutlineInputBorder(
+                  borderRadius: AppTheme.pill,
+                  borderSide: BorderSide(color: AppTheme.darkBorderSubtle),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderRadius: AppTheme.pill,
+                  borderSide: BorderSide(color: AppTheme.primaryBlue, width: 1.2),
                 ),
               ),
             ),
@@ -236,14 +246,14 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.1,
-                      color: SignalTheme.textMuted,
+                      color: AppTheme.textMuted,
                     ),
                   ),
                 ),
                 if (_query.isNotEmpty)
                   Text(
                     '${filtered.length} of ${allPeers.length}',
-                    style: const TextStyle(fontSize: 11, color: SignalTheme.textMuted),
+                    style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
                   ),
               ],
             ),
@@ -256,7 +266,7 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                 child: Text(
                   'No mesh peers discovered yet.\nPeers within Bluetooth Low Energy radio range (~30m) or Nostr internet relays will appear here automatically.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: SignalTheme.textSecondary, height: 1.5),
+                  style: TextStyle(color: AppTheme.textSecondary, height: 1.5),
                 ),
               ),
             )
@@ -267,30 +277,37 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                 child: Text(
                   'No peers match "$_query"',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: SignalTheme.textSecondary, height: 1.5),
+                  style: const TextStyle(color: AppTheme.textSecondary, height: 1.5),
                 ),
               ),
             )
           else
             ...filtered.map((peer) {
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                leading: CircleAvatar(
-                  backgroundColor: SignalTheme.darkCard,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkCard,
+                    borderRadius: AppTheme.squircleMedium,
+                    border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
+                  ),
                   child: Icon(
                     peer.isDirectNeighbor ? Icons.bluetooth : Icons.router,
-                    color: SignalTheme.bleMeshBlue,
+                    color: AppTheme.bleMeshBlue,
+                    size: 20,
                   ),
                 ),
                 title: Row(
                   children: [
                     Text(
                       peer.nickname,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                     ),
                     if (peer.isVerified) ...[
                       const SizedBox(width: 4),
-                      const Icon(Icons.verified, size: 16, color: SignalTheme.verifiedGreen),
+                      const Icon(Icons.verified, size: 15, color: AppTheme.verifiedGreen),
                     ],
                     const SizedBox(width: 8),
                     TransportBadge(medium: peer.medium, isCompact: true),
@@ -302,13 +319,13 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                       : (peer.isDirectNeighbor ? 'Nearby' : '${peer.hops}-hop relay'),
                   style: TextStyle(
                     fontSize: 12,
-                    color: _isPhoneMatch(peer) ? SignalTheme.signalBlue : SignalTheme.textSecondary,
+                    color: _isPhoneMatch(peer) ? AppTheme.primaryBlue : AppTheme.textSecondary,
                   ),
                 ),
                 trailing: IconButton(
                   icon: Icon(
                     peer.isVerified ? Icons.verified_user : Icons.shield_outlined,
-                    color: peer.isVerified ? SignalTheme.verifiedGreen : SignalTheme.textSecondary,
+                    color: peer.isVerified ? AppTheme.verifiedGreen : AppTheme.textSecondary,
                   ),
                   tooltip: 'Safety Numbers',
                   onPressed: () => SafetyVerificationSheet.show(context, peer.peerId),

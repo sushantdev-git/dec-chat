@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/enums/transport_medium.dart';
-import '../theme/signal_theme.dart';
+import '../theme/app_theme.dart';
 
 /// Visual pill badge indicating whether a packet arrived via offline BLE Mesh or Nostr relays.
 class TransportBadge extends StatelessWidget {
@@ -25,17 +25,17 @@ class TransportBadge extends StatelessWidget {
       case TransportMedium.bleMesh:
         icon = Icons.bluetooth;
         label = rssi != null ? 'BLE $rssi dBm' : 'BLE Mesh';
-        color = SignalTheme.bleMeshBlue;
+        color = AppTheme.bleMeshBlue;
         break;
       case TransportMedium.nostr:
         icon = Icons.public;
         label = 'Nostr';
-        color = SignalTheme.nostrPurple;
+        color = AppTheme.nostrPurple;
         break;
       case TransportMedium.lan:
         icon = Icons.wifi;
         label = 'LAN';
-        color = SignalTheme.verifiedGreen;
+        color = AppTheme.verifiedGreen;
         break;
       case TransportMedium.simulated:
         icon = Icons.memory;
