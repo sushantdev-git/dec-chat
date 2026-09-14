@@ -182,6 +182,23 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - **Field Verification:**
       - Verified bidirectional peer discovery and live end-to-end encrypted chat between a native **macOS desktop app** on Apple Silicon Mac mini and a **Samsung Galaxy S23** running the Android release APK.
     - **Verification:** 130/130 unit and integration tests passing across all suites (`test/application/peer_discovery_and_modules_test.dart`); 0 analyzer issues.
+  - [x] **Phase 9: Persistent Cryptographic Identity, Thread Unification & Zero-Trace Local Storage** *(Completed)*
+    - **Deterministic Identity Recovery (`IdentityKeyPair`):**
+      - Implemented serialization and deserialization (`toJson` and `fromJson`) for `IdentityKeyPair` via 32-byte private key seed extraction (`extractPrivateKeyBytes` and `newKeyPairFromSeed`).
+      - Guarantees 100% deterministic restoration of dual X25519 and Ed25519 key pairs, retaining identical 8-byte `peerId`, fingerprints, and Signal-style safety numbers across app restarts.
+    - **Zero-Trace Local Storage Subsystem (`LocalStorageService`):**
+      - Created decoupled persistent storage engine managing `identity.json`, `peers.json`, and `conversations.json` in sandboxed storage using `path_provider`.
+      - Write-through memory cache ensures instant UI read latencies and non-blocking asynchronous disk flushing.
+      - Integrated panic scrub: `wipeAll()` physically overwrites file disk buffers with zero bytes before unlinking inodes, strictly maintaining BitChat's zero-trace emergency wipe guarantee.
+      - Transparent in-memory fallback for headless CI and test environments.
+    - **State Management & Conversation Thread Unification:**
+      - `IdentityNotifier`: Restores persistent identity on startup, keeping the local node's `peerId` constant.
+      - `PeersNotifier`: Loads discovered contacts on boot; deduplicates incoming announcements by both `peerId` and `noisePublicKey` to prevent duplicate peer entries.
+      - `TimelineNotifier`: Restores conversation histories on boot; normalizes channel/peer keys (stripping `@` prefixes and lowercase) so that messages across app restarts are routed seamlessly into the same unified conversation thread for the same physical peer.
+      - `PanicController`: Orchestrates disk zeroization alongside in-memory timeline purging, radio shutdown, and ephemeral key regeneration.
+    - **Field Verification:**
+      - Tested on Samsung Galaxy S23: verified persistent peer ID (`c0e64ded`) across complete process terminations (`am force-stop`), retained conversation history under Direct Messages, and unified subsequent messages consecutively in the exact same thread.
+    - **Verification:** 140/140 unit and integration tests passing across all suites (`test/infrastructure/local_storage_service_test.dart`, `test/presentation/persistent_identity_and_threads_test.dart`, `test/domain/crypto_engine_test.dart`); 0 analyzer issues.
   
 ---
 
@@ -189,7 +206,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/peer-discovery-ble-nostr-wiring`
+- **Active Feature Branch:** `feat/persistent-identity-thread-unification`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain
