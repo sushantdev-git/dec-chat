@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/bitchat_coordinator.dart';
 import '../../core/utils/geohash.dart';
 import '../state/channels_notifier.dart';
-import '../state/identity_state.dart';
 import '../state/panic_controller.dart';
 import '../state/peers_notifier.dart';
 import '../state/timeline_notifier.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_drawer.dart';
 import '../widgets/edit_profile_sheet.dart';
 import 'chat_screen.dart';
 import 'peer_directory_screen.dart';
@@ -136,7 +136,6 @@ class ConversationListScreen extends ConsumerWidget {
     // Eagerly initialize and activate the BitChat coordinator (radios + relays)
     ref.watch(bitchatCoordinatorProvider);
 
-    final identity = ref.watch(identityProvider);
     final channelsState = ref.watch(channelsProvider);
     final peersState = ref.watch(peersProvider);
     final timelineState = ref.watch(timelineProvider);
@@ -147,73 +146,69 @@ class ConversationListScreen extends ConsumerWidget {
         .toList();
 
     return Scaffold(
+      drawer: AppDrawer(
+        onOpenEditProfile: () => EditProfileSheet.show(context),
+        onPanicWipe: () => _showPanicConfirmDialog(context, ref),
+        onNavigateToPeers: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PeerDirectoryScreen()),
+        ),
+        onNavigateToChannel: (ch) => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ChatScreen(channelOrPeerId: ch)),
+        ),
+      ),
       appBar: AppBar(
-        title: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => EditProfileSheet.show(context),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryBlue,
-                  borderRadius: AppTheme.squircleMedium,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryBlue.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    identity.nickname.isNotEmpty ? identity.nickname[0].toUpperCase() : '?',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            identity.nickname,
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.edit, size: 12, color: AppTheme.textMuted),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: AppTheme.verifiedGreen,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          '${identity.peerIdHex.substring(0, 8)} • BLE Mesh Online',
-                          style: const TextStyle(fontSize: 11, color: AppTheme.bleMeshBlue),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu, color: AppTheme.textPrimary),
+            tooltip: 'Open navigation',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
+        ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'DecChat',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppTheme.verifiedGreen.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.verifiedGreen.withValues(alpha: 0.4), width: 0.8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 5,
+                    height: 5,
+                    decoration: const BoxDecoration(
+                      color: AppTheme.verifiedGreen,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Mesh',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.verifiedGreen,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -340,7 +335,7 @@ class ConversationListScreen extends ConsumerWidget {
               padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
               child: Center(
                 child: Text(
-                  'No direct chats yet.\nTap the radar button below to discover nearby peers.',
+                  'No direct chats yet.\nOpen the menu to discover nearby mesh peers.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
                 ),
@@ -394,22 +389,6 @@ class ConversationListScreen extends ConsumerWidget {
               );
             }),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppTheme.primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: const RoundedRectangleBorder(borderRadius: AppTheme.pill),
-        icon: const Icon(Icons.radar),
-        label: Text('Peers (${peersState.allPeers.length})'),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const PeerDirectoryScreen(),
-            ),
-          );
-        },
       ),
     );
   }
