@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'presentation/theme/signal_theme.dart';
+import 'presentation/views/conversation_list_screen.dart';
 
 void main() {
-  runApp(const DecChatApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const ProviderScope(
+      child: DecChatApp(),
+    ),
+  );
 }
 
+/// DecChat main application entry point adhering to the Signal UI design pattern.
 class DecChatApp extends StatelessWidget {
   const DecChatApp({super.key});
 
@@ -12,21 +22,8 @@ class DecChatApp extends StatelessWidget {
     return MaterialApp(
       title: 'DecChat',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2C6BED), // Signal Blue
-          brightness: Brightness.dark,
-        ),
-      ),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'DecChat Mesh Messenger',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
+      theme: SignalTheme.darkTheme,
+      home: const ConversationListScreen(),
     );
   }
 }

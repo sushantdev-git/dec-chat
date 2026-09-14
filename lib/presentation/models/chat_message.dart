@@ -1,0 +1,100 @@
+import 'dart:typed_data';
+import '../../domain/enums/transport_medium.dart';
+
+/// Delivery state of a chat message in the presentation timeline.
+enum MessageDeliveryStatus {
+  sending,
+  sent,
+  delivered,
+  failed,
+}
+
+/// Immutable presentation model representing a chat message in the UI timeline.
+class ChatMessage {
+  final String id;
+  final String senderId;
+  final String senderNickname;
+  final String content;
+  final DateTime timestamp;
+  final bool isOutgoing;
+  final bool isEncrypted;
+  final TransportMedium medium;
+  final String channelOrPeerId;
+  final bool isSystem;
+  final MessageDeliveryStatus deliveryStatus;
+  final Uint8List? rawPayload;
+
+  const ChatMessage({
+    required this.id,
+    required this.senderId,
+    required this.senderNickname,
+    required this.content,
+    required this.timestamp,
+    required this.isOutgoing,
+    this.isEncrypted = false,
+    this.medium = TransportMedium.bleMesh,
+    required this.channelOrPeerId,
+    this.isSystem = false,
+    this.deliveryStatus = MessageDeliveryStatus.sent,
+    this.rawPayload,
+  });
+
+  /// Creates a local system message (e.g. notifications, slaps, pings, diagnostics).
+  factory ChatMessage.system({
+    required String id,
+    required String content,
+    required String channelOrPeerId,
+    DateTime? timestamp,
+  }) {
+    return ChatMessage(
+      id: id,
+      senderId: 'system',
+      senderNickname: 'System',
+      content: content,
+      timestamp: timestamp ?? DateTime.now(),
+      isOutgoing: false,
+      isEncrypted: false,
+      channelOrPeerId: channelOrPeerId,
+      isSystem: true,
+      deliveryStatus: MessageDeliveryStatus.delivered,
+    );
+  }
+
+  ChatMessage copyWith({
+    String? id,
+    String? senderId,
+    String? senderNickname,
+    String? content,
+    DateTime? timestamp,
+    bool? isOutgoing,
+    bool? isEncrypted,
+    TransportMedium? medium,
+    String? channelOrPeerId,
+    bool? isSystem,
+    MessageDeliveryStatus? deliveryStatus,
+    Uint8List? rawPayload,
+  }) {
+    return ChatMessage(
+      id: id ?? this.id,
+      senderId: senderId ?? this.senderId,
+      senderNickname: senderNickname ?? this.senderNickname,
+      content: content ?? this.content,
+      timestamp: timestamp ?? this.timestamp,
+      isOutgoing: isOutgoing ?? this.isOutgoing,
+      isEncrypted: isEncrypted ?? this.isEncrypted,
+      medium: medium ?? this.medium,
+      channelOrPeerId: channelOrPeerId ?? this.channelOrPeerId,
+      isSystem: isSystem ?? this.isSystem,
+      deliveryStatus: deliveryStatus ?? this.deliveryStatus,
+      rawPayload: rawPayload ?? this.rawPayload,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChatMessage && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+}

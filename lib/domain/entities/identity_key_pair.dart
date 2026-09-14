@@ -88,6 +88,21 @@ class IdentityKeyPair {
     return chunks.join(' ');
   }
 
+  /// 8-byte persistent peer ID encoded as a 16-character lowercase hex string.
+  String get peerIdHex =>
+      peerId.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+
+  /// Formats a raw string into 12 blocks of 5 digits separated by spaces.
+  static String formatSafetyNumber(String digits) {
+    final clean = digits.replaceAll(RegExp(r'\s+'), '');
+    final buffer = StringBuffer();
+    for (int i = 0; i < clean.length; i += 5) {
+      if (i > 0) buffer.write(' ');
+      buffer.write(clean.substring(i, (i + 5 < clean.length) ? i + 5 : clean.length));
+    }
+    return buffer.toString();
+  }
+
   Uint8List get noisePublicKeyBytes => Uint8List.fromList(noisePublicKey.bytes);
   Uint8List get signingPublicKeyBytes => Uint8List.fromList(signingPublicKey.bytes);
 

@@ -211,11 +211,20 @@ class Geohash {
     ];
   }
 
+  /// Reserved protocol channel names that are not geohashes.
+  static const Set<String> reservedChannels = {
+    '#mesh',
+    '#general',
+    '#broadcast',
+    '#all',
+  };
+
   /// Validates whether a channel name is a valid location channel (e.g. `#9q8yy`).
   static bool isLocationChannel(String channelName) {
-    final clean = channelName.trim();
+    final clean = channelName.trim().toLowerCase();
+    if (reservedChannels.contains(clean)) return false;
     if (!clean.startsWith('#')) return false;
-    final hashPart = clean.substring(1).toLowerCase();
+    final hashPart = clean.substring(1);
     if (hashPart.length < 3 || hashPart.length > 9) return false;
     return _validGeohashRegex.hasMatch(hashPart);
   }
