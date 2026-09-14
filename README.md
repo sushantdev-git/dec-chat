@@ -84,7 +84,15 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 ### Delivery Phases
 
-- [ ] **Phase 1: Pure Dart Wire Protocol & Codecs** (BinaryReader, BinaryWriter, BitchatPacket, TLV AnnouncementCodec, FragmentCodec)
+- [x] **Phase 1: Pure Dart Wire Protocol & Codecs** *(Completed)*
+  - `BinaryReader` & `BinaryWriter`: Big-endian integer and byte slice read/write with bounds checking.
+  - `MessageType`: Wire packet enumeration matching BitChat v2.0 with forward-compatible `unknown(rawValue)` fallback.
+  - `MessagePadding`: PKCS#7 message padding toward `{256, 512, 1024, 2048}`-byte buckets.
+  - `BitchatPacket`: Immutable packet model (v1 14-byte & v2 16-byte headers, flag bitmasks, `copyForSigning()` invariant).
+  - `BinaryProtocolCodec`: Full wire serialization/deserialization engine with automatic zlib payload compression.
+  - `AnnouncementCodec`: TLV presence encoder/decoder with resilient unknown tag skipping.
+  - `FragmentCodec`: Large packet MTU slicing into 469-byte fragments and reassembly.
+  - **Verification:** 15/15 unit tests passing (`flutter test test/domain/binary_protocol_test.dart`), 0 analyzer issues.
 - [ ] **Phase 2: Cryptographic Engine & Identity** (Ed25519 signing, Curve25519 key agreement, Noise_XX handshake, ChaCha20-Poly1305)
 - [ ] **Phase 3: Mesh Engine & Headless Multi-Node Simulation** (Deduplication LRU, jitter scheduler, TTL clamping, SimulatedLinkLayer 10-node test)
 - [ ] **Phase 4: Native BLE Dual-Role Radio Bridge** (Swift iOS CoreBluetooth + Kotlin Android BLE Advertiser/GattServer)
@@ -98,26 +106,20 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
+- **Active Feature Branch:** `feat/wire-protocol-codec`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
-### Prerequisites & Setup
-To run and develop DecChat locally:
-1. **Flutter SDK:** Ensure Flutter (≥ 3.22.0) and Dart (≥ 3.4.0) are installed:
-   ```bash
-   # Via Homebrew (macOS)
-   brew install --cask flutter
-   
-   # Or download directly from:
-   # https://docs.flutter.dev/get-started/install/macos
-   ```
-2. Verify installation:
-   ```bash
-   flutter doctor
-   ```
-3. Run automated tests (headless):
-   ```bash
-   dart test
-   ```
+### Environment & Toolchain
+- **Flutter SDK:** `3.47.4 • channel stable` (Installed at `~/development/flutter`)
+- **Dart SDK:** `3.13.3 • macos_arm64`
+- **Run Tests:**
+  ```bash
+  flutter test
+  ```
+- **Analyze Code:**
+  ```bash
+  flutter analyze
+  ```
 
 ---
 
