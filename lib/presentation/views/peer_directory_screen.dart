@@ -28,6 +28,16 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
     super.dispose();
   }
 
+  bool _isPhoneMatch(peer) {
+    if (_query.isEmpty || peer.phoneNumber == null) return false;
+    final queryDigits = _query.replaceAll(RegExp(r'[^\d]'), '');
+    final peerDigits = peer.phoneNumber!.replaceAll(RegExp(r'[^\d]'), '');
+    if (queryDigits.isNotEmpty && peerDigits.contains(queryDigits)) return true;
+    final q = _query.toLowerCase();
+    if (peer.phoneNumber!.toLowerCase().contains(q)) return true;
+    return false;
+  }
+
   /// Returns true if the peer matches the current search query.
   /// Matches on nickname prefix, phone number (digits-only substring), or peer ID prefix.
   bool _matches(peer) {
@@ -38,12 +48,7 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
     // 2. Peer ID (prefix)
     if (peer.peerId.toLowerCase().startsWith(q)) return true;
     // 3. Phone number — compare digits only so "+91 98765" matches "9198765"
-    if (peer.phoneNumber != null) {
-      final peerDigits = peer.phoneNumber!.replaceAll(RegExp(r'[^\d]'), '');
-      final queryDigits = _query.replaceAll(RegExp(r'[^\d]'), '');
-      if (queryDigits.isNotEmpty && peerDigits.contains(queryDigits)) return true;
-      if (peer.phoneNumber!.toLowerCase().contains(q)) return true;
-    }
+    if (_isPhoneMatch(peer)) return true;
     return false;
   }
 
@@ -291,25 +296,14 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                     TransportBadge(medium: peer.medium, isCompact: true),
                   ],
                 ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${peer.isDirectNeighbor ? '1-hop direct' : '${peer.hops}-hops'} • ${peer.signalQuality}  ·  ${peer.shortPeerId}',
-                      style: const TextStyle(fontSize: 12, color: SignalTheme.textSecondary),
-                    ),
-                    if (peer.phoneNumber != null && peer.phoneNumber!.isNotEmpty)
-                      Row(
-                        children: [
-                          const Icon(Icons.phone_outlined, size: 11, color: SignalTheme.textMuted),
-                          const SizedBox(width: 3),
-                          Text(
-                            peer.phoneNumber!,
-                            style: const TextStyle(fontSize: 11, color: SignalTheme.textMuted),
-                          ),
-                        ],
-                      ),
-                  ],
+                subtitle: Text(
+                  _isPhoneMatch(peer)
+                      ? 'Phone match'
+                      : (peer.isDirectNeighbor ? 'Nearby' : '${peer.hops}-hop relay'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _isPhoneMatch(peer) ? SignalTheme.signalBlue : SignalTheme.textSecondary,
+                  ),
                 ),
                 trailing: IconButton(
                   icon: Icon(
