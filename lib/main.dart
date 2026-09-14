@@ -8,19 +8,19 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
     const ProviderScope(
-      child: DecChatApp(),
+      child: GridApp(),
     ),
   );
 }
 
-/// DecChat main application entry point adhering to minimalist design.
-class DecChatApp extends StatelessWidget {
-  const DecChatApp({super.key});
+/// Grid main application entry point adhering to minimalist design.
+class GridApp extends StatelessWidget {
+  const GridApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'DecChat',
+      title: 'Grid',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const ConversationListScreen(),

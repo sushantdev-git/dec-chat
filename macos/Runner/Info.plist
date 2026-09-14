@@ -29,8 +29,8 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>DecChat uses Bluetooth Low Energy to create an offline, decentralized peer-to-peer mesh network with nearby devices.</string>
+	<string>Grid uses Bluetooth Low Energy to create an offline, decentralized peer-to-peer mesh network with nearby devices.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>DecChat uses Bluetooth Low Energy to discover and communicate with nearby mesh peers.</string>
+	<string>Grid uses Bluetooth Low Energy to discover and communicate with nearby mesh peers.</string>
 </dict>
 </plist>

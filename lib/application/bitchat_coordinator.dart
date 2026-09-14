@@ -22,7 +22,7 @@ import '../presentation/state/identity_state.dart';
 import '../presentation/state/peers_notifier.dart';
 import '../presentation/state/timeline_notifier.dart';
 
-/// Master coordinator tying together the full DecChat stack:
+/// Master coordinator tying together the full Grid stack:
 /// - Cryptographic identity & Noise sessions
 /// - Controlled flooding MeshEngine
 /// - Store-and-forward Courier DTN engine

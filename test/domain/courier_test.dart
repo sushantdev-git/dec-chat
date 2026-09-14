@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dec_chat/domain/entities/courier_envelope.dart';
-import 'package:dec_chat/domain/enums/transport_medium.dart';
-import 'package:dec_chat/domain/ports/transport_port.dart';
-import 'package:dec_chat/domain/services/courier_service.dart';
+import 'package:grid/domain/entities/courier_envelope.dart';
+import 'package:grid/domain/enums/transport_medium.dart';
+import 'package:grid/domain/ports/transport_port.dart';
+import 'package:grid/domain/services/courier_service.dart';
 
 class MockCourierTransport implements TransportPort {
   final List<MapEntry<String, Uint8List>> sentDirectedPackets = [];

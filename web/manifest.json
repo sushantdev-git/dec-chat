@@ -1,11 +1,11 @@
 {
-    "name": "dec_chat",
-    "short_name": "dec_chat",
+    "name": "Grid",
+    "short_name": "Grid",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#09090B",
+    "theme_color": "#09090B",
+    "description": "Grid: Decentralized Peer-to-Peer Mesh Messenger.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

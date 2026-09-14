@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dec_chat/application/bitchat_coordinator.dart';
-import 'package:dec_chat/domain/entities/bitchat_packet.dart';
-import 'package:dec_chat/domain/entities/courier_envelope.dart';
-import 'package:dec_chat/domain/entities/identity_key_pair.dart';
-import 'package:dec_chat/domain/enums/message_type.dart';
-import 'package:dec_chat/domain/services/feature_registry.dart';
-import 'package:dec_chat/infrastructure/adapters/simulated_link_adapter.dart';
+import 'package:grid/application/bitchat_coordinator.dart';
+import 'package:grid/domain/entities/bitchat_packet.dart';
+import 'package:grid/domain/entities/courier_envelope.dart';
+import 'package:grid/domain/entities/identity_key_pair.dart';
+import 'package:grid/domain/enums/message_type.dart';
+import 'package:grid/domain/services/feature_registry.dart';
+import 'package:grid/infrastructure/adapters/simulated_link_adapter.dart';
 
 class TestChatModule implements ProtocolFeatureModule {
   final List<BitchatPacket> receivedPackets = [];

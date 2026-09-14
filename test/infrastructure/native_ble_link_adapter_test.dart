@@ -1,11 +1,11 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dec_chat/core/constants/ble_constants.dart';
-import 'package:dec_chat/domain/enums/transport_medium.dart';
-import 'package:dec_chat/domain/ports/power_policy_port.dart';
-import 'package:dec_chat/domain/ports/transport_port.dart';
-import 'package:dec_chat/infrastructure/adapters/native_ble_link_adapter.dart';
+import 'package:grid/core/constants/ble_constants.dart';
+import 'package:grid/domain/enums/transport_medium.dart';
+import 'package:grid/domain/ports/power_policy_port.dart';
+import 'package:grid/domain/ports/transport_port.dart';
+import 'package:grid/infrastructure/adapters/native_ble_link_adapter.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

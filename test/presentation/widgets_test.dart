@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dec_chat/domain/enums/transport_medium.dart';
-import 'package:dec_chat/presentation/models/chat_message.dart';
-import 'package:dec_chat/presentation/models/peer_model.dart';
-import 'package:dec_chat/presentation/theme/app_theme.dart';
-import 'package:dec_chat/presentation/views/chat_screen.dart';
-import 'package:dec_chat/presentation/views/conversation_list_screen.dart';
-import 'package:dec_chat/presentation/widgets/app_drawer.dart';
-import 'package:dec_chat/presentation/widgets/message_bubble.dart';
-import 'package:dec_chat/presentation/widgets/safety_number_card.dart';
-import 'package:dec_chat/presentation/widgets/transport_badge.dart';
+import 'package:grid/domain/enums/transport_medium.dart';
+import 'package:grid/presentation/models/chat_message.dart';
+import 'package:grid/presentation/models/peer_model.dart';
+import 'package:grid/presentation/theme/app_theme.dart';
+import 'package:grid/presentation/views/chat_screen.dart';
+import 'package:grid/presentation/views/conversation_list_screen.dart';
+import 'package:grid/presentation/widgets/app_drawer.dart';
+import 'package:grid/presentation/widgets/message_bubble.dart';
+import 'package:grid/presentation/widgets/safety_number_card.dart';
+import 'package:grid/presentation/widgets/transport_badge.dart';
 
 void main() {
   group('Minimalist Custom UI Widgets', () {
@@ -191,11 +191,11 @@ void main() {
       expect(find.text('Public Mesh Channel'), findsOneWidget);
 
       // Enter text and send
-      await tester.enterText(find.byType(TextField), 'Hello DecChat World!');
+      await tester.enterText(find.byType(TextField), 'Hello Grid World!');
       await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
       await tester.pump();
 
-      expect(find.text('Hello DecChat World!'), findsOneWidget);
+      expect(find.text('Hello Grid World!'), findsOneWidget);
     });
 
     testWidgets('ChatScreen shows slash command popup when user types /', (tester) async {

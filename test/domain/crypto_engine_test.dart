@@ -3,15 +3,15 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cryptography/cryptography.dart';
 
-import 'package:dec_chat/domain/entities/bitchat_packet.dart';
-import 'package:dec_chat/domain/entities/identity_key_pair.dart';
-import 'package:dec_chat/domain/enums/message_type.dart';
-import 'package:dec_chat/domain/enums/noise_payload_type.dart';
-import 'package:dec_chat/domain/services/noise_cipher_state.dart';
-import 'package:dec_chat/domain/services/noise_handshake_state.dart';
-import 'package:dec_chat/domain/services/noise_session_manager.dart';
-import 'package:dec_chat/domain/services/noise_symmetric_state.dart';
-import 'package:dec_chat/infrastructure/adapters/cryptography_adapter.dart';
+import 'package:grid/domain/entities/bitchat_packet.dart';
+import 'package:grid/domain/entities/identity_key_pair.dart';
+import 'package:grid/domain/enums/message_type.dart';
+import 'package:grid/domain/enums/noise_payload_type.dart';
+import 'package:grid/domain/services/noise_cipher_state.dart';
+import 'package:grid/domain/services/noise_handshake_state.dart';
+import 'package:grid/domain/services/noise_session_manager.dart';
+import 'package:grid/domain/services/noise_symmetric_state.dart';
+import 'package:grid/infrastructure/adapters/cryptography_adapter.dart';
 
 void main() {
   group('IdentityKeyPair & Safety Numbers', () {

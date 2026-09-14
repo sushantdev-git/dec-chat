@@ -165,7 +165,7 @@ class AppDrawer extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'DecChat',
+                          'Grid',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,

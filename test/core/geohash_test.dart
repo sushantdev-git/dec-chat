@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dec_chat/core/utils/geohash.dart';
+import 'package:grid/core/utils/geohash.dart';
 
 void main() {
   group('Geohash Base-32 Spatial Indexing', () {

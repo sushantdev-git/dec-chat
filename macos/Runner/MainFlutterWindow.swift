@@ -50,7 +50,7 @@ class BLEPeripheralController: NSObject, CBPeripheralManagerDelegate {
         
         let advertisementData: [String: Any] = [
             CBAdvertisementDataServiceUUIDsKey: [BLEConstants.serviceUUID],
-            CBAdvertisementDataLocalNameKey: "DecChat"
+            CBAdvertisementDataLocalNameKey: "Grid"
         ]
         peripheralManager.startAdvertising(advertisementData)
         isAdvertising = true
