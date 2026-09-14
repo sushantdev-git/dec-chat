@@ -93,7 +93,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - `AnnouncementCodec`: TLV presence encoder/decoder with resilient unknown tag skipping.
     - `FragmentCodec`: Large packet MTU slicing into 469-byte fragments and reassembly.
     - **Verification:** 15/15 unit tests passing, 0 analyzer issues.
-  - [x] **Phase 2: Cryptographic Engine & Identity Subsystem** *(Completed)*
+  - [x] **Phase 2: Cryptographic Engine & Identity Subsystem** *(Completed & Merged)*
     - `IdentityKeyPair`: Dual Curve25519 (X25519) + Ed25519 keys, persistent 8-byte peer ID (`SHA-256(noisePublicKey)[0..8]`), and symmetric Signal-style 60-digit safety numbers.
     - `CryptoPort` & `CryptographyAdapter`: Abstract port & concrete adapter using `package:cryptography` for unforgeable canonical packet signing (`TTL=0`) and tamper-evident verification.
     - `NoiseCipherState`: ChaCha20-Poly1305 AEAD with BitChat 12-byte nonce layout, extracted 4-byte big-endian wire nonces, and 1024-bit sliding-window replay protection.
@@ -102,7 +102,13 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - `NoiseSessionManager` & `NoiseSession`: State management for peer E2EE sessions, in-flight handshake timeout management, automatic PKCS#7 message padding, and instant panic session wipe.
     - `NoisePayloadType`: Forward-compatible enumeration for inner decrypted 0x11 payloads (`privateMessage`, `readReceipt`, `groupInvite`, `verifyChallenge`, etc.).
     - **Verification:** 28/28 unit tests passing across protocol and crypto suites, 0 analyzer issues.
-  - [ ] **Phase 3: Mesh Engine & Headless Multi-Node Simulation** (Deduplication LRU, jitter scheduler, TTL clamping, SimulatedLinkLayer 10-node test)
+  - [x] **Phase 3: Mesh Routing Engine & Multi-Node Simulation** *(Completed)*
+    - `SeenPacketCache`: High-performance 1,000-entry LRU cache with 5-minute TTL and immediate duplicate suppression.
+    - `ProtocolFeatureRegistry` & `ProtocolFeatureModule`: Dynamic decoupled feature registration preserving the Open-Closed Principle (zero feature knowledge in core mesh).
+    - `MeshEngine`: BitChat controlled flooding with adaptive TTL clamping ($7 \to 5$ when peer density $\ge 6$), randomized relay jitter ($10\text{--}220\text{ ms}$), split-horizon filtering, and degree-based fanout subsetting.
+    - `TransportPort` & `TransportMedium`: Transport abstraction supporting BLE, Nostr, Wi-Fi LAN, and simulated virtual radio links.
+    - `SimulatedMeshNetwork` & `SimulatedLinkAdapter`: Headless multi-node virtual radio environment with configurable propagation latency, packet loss, and topology builders (line, full mesh, ring).
+    - **Verification:** 38/38 unit tests passing across all suites including 10-node linear chain and circular ring deduplication simulations; 0 analyzer issues.
   - [ ] **Phase 4: Native BLE Dual-Role Radio Bridge** (Swift iOS CoreBluetooth + Kotlin Android BLE Advertiser/GattServer)
   - [ ] **Phase 5: Nostr Dual-Transport & Location Channels** (WebSocket relays, Geohash chat rooms)
   - [ ] **Phase 6: Riverpod Application State & Signal UI** (Conversation threads, peer directory, message bubbles, IRC slash commands)
@@ -114,7 +120,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/crypto-identity-engine`
+- **Active Feature Branch:** `feat/mesh-routing-engine`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain
