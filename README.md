@@ -153,7 +153,15 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
       - `SafetyNumberCard`: Symmetric 60-digit safety number comparison layout (12 blocks of 5 digits) with QR verification.
       - `ConversationListScreen`, `ChatScreen`, `PeerDirectoryScreen`, `SafetyVerificationDialog`.
     - **Verification:** 109/109 unit and widget tests passing across all suites; 0 analyzer issues.
-  - [ ] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish** (Spray-and-wait outbox, instant zeroization, QR safety verification)
+  - [x] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish** *(Completed)*
+    - `CourierEnvelope`: Compact binary wire serialization for sealed DTN envelopes, hop budgeting, and expiration checking.
+    - `CourierService`: Store-and-forward Delay-Tolerant Networking (DTN) outbox with spray-and-wait routing, data-muling across partitioned networks, direct encounter delivery, and capacity eviction.
+    - `CourierModule`: Protocol feature module integrating `MessageType.courierEnvelope` (`0x04`) into `ProtocolFeatureRegistry` and `MeshEngine`.
+    - `PanicZeroizationService`: In-place memory scrubbing (`scrubBytes`), courier outbox wipe, Noise session cipher state destruction, deduplication cache clearing, and radio shutdown.
+    - `BitchatCoordinator`: Master application coordinator tying together identity, Noise encryption, controlled mesh flooding, courier DTN, and panic zeroization.
+    - `PanicController` Integration: Complete tie-in of the presentation layer's `/panic` command to the low-level zeroization pipeline.
+    - `End-to-End Integration Suite`: Verification of direct 1-hop delivery, multi-node mobile data muling across network partitions, and panic zeroization.
+    - **Verification:** 123/123 unit and integration tests passing across all suites; 0 analyzer issues.
   
 ---
 
@@ -161,7 +169,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/riverpod-state-signal-ui`
+- **Active Feature Branch:** `feat/courier-dtn-panic-polish`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain

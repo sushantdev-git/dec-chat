@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/identity_key_pair.dart';
+import '../../domain/services/panic_zeroization_service.dart';
 
 /// State holding local node identity, keys, and display nickname.
 class IdentityState {
@@ -63,6 +64,9 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
 
   /// Emergency panic wipe: zeroizes identity and generates a brand new ephemeral key pair.
   Future<void> panicWipe() async {
+    if (state.keyPair != null) {
+      PanicZeroizationService.scrubBytes(state.keyPair!.peerId);
+    }
     final freshKeyPair = await IdentityKeyPair.generate(
       nickname: 'anon_${DateTime.now().millisecondsSinceEpoch % 10000}',
     );
