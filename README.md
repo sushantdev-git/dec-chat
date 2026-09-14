@@ -109,7 +109,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - `TransportPort` & `TransportMedium`: Transport abstraction supporting BLE, Nostr, Wi-Fi LAN, and simulated virtual radio links.
     - `SimulatedMeshNetwork` & `SimulatedLinkAdapter`: Headless multi-node virtual radio environment with configurable propagation latency, packet loss, and topology builders (line, full mesh, ring).
     - **Verification:** 38/38 unit tests passing across all suites including 10-node linear chain and circular ring deduplication simulations; 0 analyzer issues.
-  - [x] **Phase 4: Native BLE Dual-Role Radio Bridge** *(Completed)*
+  - [x] **Phase 4: Native BLE Dual-Role Radio Bridge** *(Completed & Merged)*
     - `BleConstants`: BitChat Service UUID (`0xFDC7`), Characteristic UUID (`0x2A06`), target MTU 512, platform channel identifiers.
     - `PowerPolicyPort` & `BlePowerMode`: Adaptive duty cycle modes: `active` (100% continuous), `balanced` (15s on / 15s off), and `background` (5s on / 55s off).
     - `NativeBleLinkAdapter`: Concrete `TransportPort` bridging Dart mesh routing with native dual-role radio controllers via Flutter MethodChannel and EventChannel.
@@ -128,7 +128,14 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
       - `BlePlatformChannel`: MethodChannel and EventChannel bridge.
       - Permissions: `BLUETOOTH_SCAN`, `BLUETOOTH_ADVERTISE`, `BLUETOOTH_CONNECT`, `ACCESS_FINE_LOCATION`.
     - **Verification:** 46/46 unit tests passing across all suites including platform channel bridge test suite; 0 analyzer issues.
-  - [ ] **Phase 5: Nostr Dual-Transport & Location Channels** (WebSocket relays, Geohash chat rooms)
+  - [x] **Phase 5: Nostr Dual-Transport & Location Channels** *(Completed)*
+    - `Geohash`: Pure Dart Morton Z-order curve spatial indexing encoder, decoder, 8-neighbor adjacency calculator, and location channel validation (`#9q8yy`).
+    - `NostrKind`: Protocol event enumeration covering NIP-01, NIP-04, NIP-28, and custom ephemeral BitChat mesh (20000) & geohash (20001) carriers.
+    - `NostrEvent`: NIP-01 data model, canonical serialization `[0, pubkey, created_at, kind, tags, content]`, SHA-256 event ID verification, and transparent BitChat packet wrapping/unwrapping.
+    - `NostrRelayAdapter`: Concrete `TransportPort` managing multi-relay WebSocket connections, automatic reconnection with backoff, NIP-01 subscription framing (`REQ`, `CLOSE`), echo suppression, and geohash channel subscriptions.
+    - `LocationChannelService`: Spatial channel manager resolving GPS coordinates to geohash channels and computing 9-cell boundary neighborhood coverage.
+    - `MessageRouter`: Dual-transport coordinator implementing `TransportPort`, providing policy switching (`adaptive`, `bleOnly`, `nostrOnly`, `dual`), cross-medium deduplication via `SeenPacketCache`, and proximity-directed BLE-to-Nostr fallback.
+    - **Verification:** 78/78 unit tests passing across all suites; 0 analyzer issues.
   - [ ] **Phase 6: Riverpod Application State & Signal UI** (Conversation threads, peer directory, message bubbles, IRC slash commands)
   - [ ] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish** (Spray-and-wait outbox, instant zeroization, QR safety verification)
   
@@ -138,7 +145,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/native-ble-bridge`
+- **Active Feature Branch:** `feat/nostr-location-channels`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain
