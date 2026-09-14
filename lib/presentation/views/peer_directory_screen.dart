@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/bitchat_coordinator.dart';
 import '../state/identity_state.dart';
 import '../state/peers_notifier.dart';
 import '../theme/app_theme.dart';
 import '../widgets/edit_profile_sheet.dart';
+import '../widgets/three_d_scan_visualizer.dart';
 import '../widgets/transport_badge.dart';
 import 'chat_screen.dart';
 import 'safety_verification_dialog.dart';
@@ -21,11 +24,59 @@ class PeerDirectoryScreen extends ConsumerStatefulWidget {
 class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _query = '';
+  bool _isScanning = false;
+  Timer? _scanTimer;
+  Timer? _scanBurstTimer;
 
   @override
   void dispose() {
+    _scanTimer?.cancel();
+    _scanBurstTimer?.cancel();
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  void _startScan() {
+    if (_isScanning) return;
+    setState(() => _isScanning = true);
+
+    // Immediate presence announcement burst
+    ref.read(bitchatCoordinatorProvider)?.broadcastPresence();
+
+    // Broadcast presence burst periodically every 1.5 seconds during scan
+    _scanBurstTimer?.cancel();
+    _scanBurstTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      ref.read(bitchatCoordinatorProvider)?.broadcastPresence();
+    });
+
+    // Conclude scan automatically after 10 seconds
+    _scanTimer?.cancel();
+    _scanTimer = Timer(const Duration(seconds: 10), () {
+      _stopScan(showNotification: true);
+    });
+  }
+
+  void _stopScan({bool showNotification = false}) {
+    _scanTimer?.cancel();
+    _scanBurstTimer?.cancel();
+    if (!mounted) return;
+    final wasScanning = _isScanning;
+    setState(() => _isScanning = false);
+
+    if (wasScanning && showNotification) {
+      final peerCount = ref.read(peersProvider).allPeers.length;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            peerCount > 0
+                ? 'Scan complete. Discovered $peerCount mesh ${peerCount == 1 ? 'peer' : 'peers'}.'
+                : 'Scan complete. No new peers detected in range.',
+          ),
+          backgroundColor: AppTheme.darkCardElevated,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   bool _isPhoneMatch(peer) {
@@ -84,6 +135,34 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Discovered Peers', style: TextStyle(fontWeight: FontWeight.w700)),
+          actions: [
+            if (_isScanning)
+              TextButton.icon(
+                onPressed: () => _stopScan(showNotification: true),
+                icon: const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppTheme.verifiedGreen,
+                  ),
+                ),
+                label: const Text(
+                  'Scanning',
+                  style: TextStyle(
+                    color: AppTheme.verifiedGreen,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+            else
+              IconButton(
+                icon: const Icon(Icons.radar, color: AppTheme.textPrimary),
+                tooltip: 'Scan for peers',
+                onPressed: _startScan,
+              ),
+          ],
         ),
         body: ListView(
           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -196,6 +275,13 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
             ),
           ),
 
+          // ── 3D Pulsating Scan Visualizer (while scanning) ───────────────
+          if (_isScanning)
+            ThreeDScanVisualizer(
+              peerCount: filtered.length,
+              onStopScan: () => _stopScan(showNotification: true),
+            ),
+
           // ── Search Bar ──────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -261,13 +347,37 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
           ),
 
           if (allPeers.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
               child: Center(
-                child: Text(
-                  'No mesh peers discovered yet.\nPeers within Bluetooth Low Energy radio range (~30m) or Nostr internet relays will appear here automatically.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textSecondary, height: 1.5),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.radar_outlined, size: 44, color: AppTheme.textMuted),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No mesh peers discovered yet.\nPeers within Bluetooth Low Energy radio range (~30m) or Nostr internet relays will appear here automatically.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppTheme.textSecondary, height: 1.5),
+                    ),
+                    if (!_isScanning) ...[
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: _startScan,
+                        icon: const Icon(Icons.sensors, size: 16, color: AppTheme.onPrimaryAccent),
+                        label: const Text(
+                          'Scan for Nearby Peers',
+                          style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.onPrimaryAccent),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryAccent,
+                          foregroundColor: AppTheme.onPrimaryAccent,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: const RoundedRectangleBorder(borderRadius: AppTheme.pill),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             )

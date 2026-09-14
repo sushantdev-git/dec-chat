@@ -8,9 +8,11 @@ import 'package:grid/presentation/models/peer_model.dart';
 import 'package:grid/presentation/theme/app_theme.dart';
 import 'package:grid/presentation/views/chat_screen.dart';
 import 'package:grid/presentation/views/conversation_list_screen.dart';
+import 'package:grid/presentation/views/peer_directory_screen.dart';
 import 'package:grid/presentation/widgets/app_drawer.dart';
 import 'package:grid/presentation/widgets/message_bubble.dart';
 import 'package:grid/presentation/widgets/safety_number_card.dart';
+import 'package:grid/presentation/widgets/three_d_scan_visualizer.dart';
 import 'package:grid/presentation/widgets/transport_badge.dart';
 
 void main() {
@@ -293,6 +295,64 @@ void main() {
 
       // Peer Directory screen should be visible
       expect(find.text('Discovered Peers'), findsOneWidget);
+    });
+
+    testWidgets('ThreeDScanVisualizer renders scanning badge, telemetry, and handles stop callback', (tester) async {
+      var stopped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: ThreeDScanVisualizer(
+              peerCount: 3,
+              onStopScan: () => stopped = true,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('RADIO DISCOVERY BURST'), findsOneWidget);
+      expect(find.text('SCANNING'), findsOneWidget);
+      expect(find.text('3 Peers Found'), findsOneWidget);
+      expect(find.text('BLE 2.4 GHz + Nostr Relays'), findsOneWidget);
+      expect(find.text('Stop'), findsOneWidget);
+
+      await tester.tap(find.text('Stop'));
+      await tester.pump();
+      expect(stopped, isTrue);
+    });
+
+    testWidgets('PeerDirectoryScreen shows scan triggers and toggles 3D visualizer on scan', (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: PeerDirectoryScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Initially not scanning: AppBar shows radar scan icon, empty state shows Scan for Nearby Peers button
+      expect(find.byIcon(Icons.radar), findsOneWidget);
+      expect(find.text('Scan for Nearby Peers'), findsOneWidget);
+      expect(find.byType(ThreeDScanVisualizer), findsNothing);
+
+      // Tap the AppBar radar icon to initiate scan
+      await tester.tap(find.byIcon(Icons.radar));
+      await tester.pump();
+
+      // Scanning is active: 3D visualizer is mounted and AppBar indicates Scanning
+      expect(find.byType(ThreeDScanVisualizer), findsOneWidget);
+      expect(find.text('Scanning'), findsOneWidget);
+
+      // Stop scan from visualizer's stop button
+      await tester.tap(find.text('Stop'));
+      await tester.pump();
+
+      // Visualizer is removed and radar icon returns
+      expect(find.byType(ThreeDScanVisualizer), findsNothing);
+      expect(find.byIcon(Icons.radar), findsOneWidget);
     });
   });
 }
