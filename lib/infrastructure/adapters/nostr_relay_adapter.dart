@@ -103,10 +103,15 @@ class NostrRelayAdapter implements TransportPort {
       final channel = _channelFactory(uri);
       _relays[url] = channel;
 
+      channel.ready.then((_) {}, onError: (error) {
+        _handleRelayFailure(url, error);
+      });
+
       final subscription = channel.stream.listen(
         (message) => _handleIncomingRelayMessage(url, message),
         onError: (error) => _handleRelayFailure(url, error),
         onDone: () => _handleRelayDisconnection(url),
+        cancelOnError: true,
       );
 
       _subscriptions[url] = subscription;

@@ -162,6 +162,26 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - `PanicController` Integration: Complete tie-in of the presentation layer's `/panic` command to the low-level zeroization pipeline.
     - `End-to-End Integration Suite`: Verification of direct 1-hop delivery, multi-node mobile data muling across network partitions, and panic zeroization.
     - **Verification:** 123/123 unit and integration tests passing across all suites; 0 analyzer issues.
+  - [x] **Phase 8: Native macOS Desktop BLE, Live Peer Discovery & Dual-Transport Hardening** *(Completed)*
+    - **Live Presence Discovery & Protocol Wiring:**
+      - `AnnouncementModule`: Protocol module capturing `MessageType.announce` packets and registering peers with nicknames, cryptographic public keys, and Signal-style safety numbers into `peersProvider`.
+      - `ChatMessageModule`: Protocol module routing `MessageType.message` packets into `timelineProvider` for real-time conversation updates.
+      - Periodic Announcement Timer: Added a 4-second recurring announcement routine in `BitchatCoordinator` to actively advertise node presence across BLE and Nostr transports.
+      - Eager Coordinator Activation: Bound `bitchatCoordinatorProvider` directly into `ConversationListScreen` on app launch.
+    - **Native macOS CoreBluetooth Integration (`macos/Runner/MainFlutterWindow.swift`):**
+      - Implemented native `BLEPeripheralController` (advertising + GATT server) and `BLECentralController` (scanning + GATT client) in Swift for native macOS desktop builds.
+      - Fixed radio initialization lifecycle bug where scanning/advertising guards returned early before Bluetooth reached `.poweredOn` state; added `shouldBeAdvertising` and `shouldBeScanning` state management to automatically trigger radio operation upon initialization.
+      - Updated macOS entitlements (`DebugProfile.entitlements` and `Release.entitlements`) with `com.apple.security.device.bluetooth` and `com.apple.security.network.client`.
+    - **Android BLE Scanner & Internet Permissions:**
+      - Added `INTERNET` and `ACCESS_NETWORK_STATE` to `AndroidManifest.xml` for seamless WebSocket connectivity.
+      - Enhanced `BleScannerManager.kt` with dual filter matching (`SERVICE_UUID` and `filterByName("DecChat")`) with software fallback in `onScanResult` for maximum cross-platform compatibility with Apple CoreBluetooth advertisements.
+    - **Nostr Relay Resilience & Unique Public Keys:**
+      - Replaced dead relays with confirmed active Nostr WebSocket relays (`wss://relay.primal.net`, `wss://offchain.pub`, `wss://nos.lol`).
+      - Derived unique 64-character lowercase hex public keys from node Ed25519 signing keys so peer packets are never dropped as self-echoes.
+      - Updated `MessageRouter` with non-blocking error guards (`.catchError((_) {})`) ensuring BLE and Nostr operate redundantly.
+    - **Field Verification:**
+      - Verified bidirectional peer discovery and live end-to-end encrypted chat between a native **macOS desktop app** on Apple Silicon Mac mini and a **Samsung Galaxy S23** running the Android release APK.
+    - **Verification:** 130/130 unit and integration tests passing across all suites (`test/application/peer_discovery_and_modules_test.dart`); 0 analyzer issues.
   
 ---
 
@@ -169,7 +189,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/courier-dtn-panic-polish`
+- **Active Feature Branch:** `feat/peer-discovery-ble-nostr-wiring`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain

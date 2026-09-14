@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/bitchat_coordinator.dart';
 import '../../core/utils/geohash.dart';
 import '../../domain/entities/bitchat_packet.dart';
 import '../../domain/enums/message_type.dart';
@@ -89,7 +90,32 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
     addMessage(chatMessage);
 
     // Wire protocol dispatching
-    if (router != null) {
+    final coordinator = ref.read(bitchatCoordinatorProvider);
+    if (coordinator != null) {
+      final payloadBytes = Uint8List.fromList(utf8.encode(clean));
+      try {
+        if (isChannel) {
+          await coordinator.meshEngine.sendBroadcastPacket(
+            type: MessageType.message,
+            payload: payloadBytes,
+          );
+        } else {
+          final hexClean = channelOrPeerId.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');
+          if (hexClean.isNotEmpty) {
+            final targetBytes = Uint8List.fromList(
+              List.generate(hexClean.length ~/ 2, (i) => int.parse(hexClean.substring(i * 2, i * 2 + 2), radix: 16)),
+            );
+            await coordinator.meshEngine.sendDirectedPacket(
+              recipientId: targetBytes,
+              type: MessageType.message,
+              payload: payloadBytes,
+            );
+          }
+        }
+      } catch (_) {
+        // Handled silently in offline / decoupled mode
+      }
+    } else if (router != null) {
       final payloadBytes = Uint8List.fromList(utf8.encode(clean));
 
       try {

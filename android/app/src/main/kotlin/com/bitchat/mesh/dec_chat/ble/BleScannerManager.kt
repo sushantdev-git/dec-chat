@@ -23,7 +23,12 @@ class BleScannerManager(
     private val callback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             if (result != null) {
-                listener.onDeviceDiscovered(result)
+                val record = result.scanRecord
+                val matchesUuid = record?.serviceUuids?.any { it.uuid == BleConstants.SERVICE_UUID } == true
+                val matchesName = record?.deviceName?.contains("DecChat", ignoreCase = true) == true
+                if (matchesUuid || matchesName) {
+                    listener.onDeviceDiscovered(result)
+                }
             }
         }
 
@@ -38,8 +43,11 @@ class BleScannerManager(
         scanner = bluetoothAdapter?.bluetoothLeScanner
         val leScanner = scanner ?: return
 
-        val filter = ScanFilter.Builder()
+        val filterByUuid = ScanFilter.Builder()
             .setServiceUuid(ParcelUuid(BleConstants.SERVICE_UUID))
+            .build()
+        val filterByName = ScanFilter.Builder()
+            .setDeviceName("DecChat")
             .build()
 
         val settings = ScanSettings.Builder()
@@ -48,7 +56,7 @@ class BleScannerManager(
             .build()
 
         try {
-            leScanner.startScan(listOf(filter), settings, callback)
+            leScanner.startScan(listOf(filterByUuid, filterByName), settings, callback)
             isScanning = true
         } catch (e: SecurityException) {
             Log.e("BleScanner", "Permission error starting scan", e)
