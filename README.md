@@ -1,4 +1,4 @@
-# DecChat: Decentralized Peer-to-Peer Mesh & Nostr Messenger
+# Grid: Decentralized Peer-to-Peer Mesh & Nostr Messenger
 
 > A censorship-resistant, zero-infrastructure, end-to-end encrypted mobile chat application built with **Flutter**, powered by the **BitChat** mesh protocol and **Nostr** internet fallback.
 
@@ -6,20 +6,21 @@
 [![Protocol: BitChat v2.0](https://img.shields.io/badge/protocol-BitChat%20v2.0-orange)](https://github.com/permissionlesstech/bitchat)
 [![Architecture: Clean%20%2F%20Hexagonal](https://img.shields.io/badge/architecture-Hexagonal%20Ports%20%26%20Adapters-green)](BITCHAT_FLUTTER_ARCHITECTURE.md)
 [![State: Riverpod](https://img.shields.io/badge/state-Riverpod-blue)](https://riverpod.dev)
-[![UI: Signal%20Design%20Pattern](https://img.shields.io/badge/UI-Signal%20Design%20Pattern-brightgreen)](https://signal.org)
+[![Design: Minimal%20Monochrome](https://img.shields.io/badge/Design-Minimal%20Monochrome-lightgrey)](#-minimal-monochrome-design-system)
 
 ---
 
 ## 🌟 Vision & Key Capabilities
 
-- **Zero Accounts & Zero Phone Numbers:** Cryptographic key pairs serve as the sole user identity. No servers, registration, or metadata silos.
+- **Zero Accounts & Zero Central Servers:** Cryptographic key pairs serve as the sole user identity. No servers, registration, or metadata silos.
 - **Dual Transport Architecture:**
   - **Offline BLE Mesh Network:** Direct peer-to-peer and multi-hop mesh communication over Bluetooth Low Energy when disconnected from the internet.
   - **Nostr Relay Fallback:** Bridges separated meshes and reaches remote mutual favorites across the global internet via Nostr WebSocket relays.
-- **Signal UI Design Pattern:** Clean, intuitive, modern messaging interface inspired by Signal (conversation threads, encrypted chat bubbles, peer safety numbers, QR verification), coupled with BitChat power commands (`/msg`, `/who`, `/slap`, `/ping`, `/join`, `/clear`, `/panic`).
+- **Minimalist Monochrome UI:** Clean, distraction-free aesthetic with high-contrast Zinc tones, floating capsule composer, continuous squircle cards, and a standard Left Navigation Drawer.
 - **End-to-End Encryption with Forward Secrecy:** Private chats are secured using the **Noise Protocol Framework (`Noise_XX_25519_ChaChaPoly_SHA256`)**.
 - **Controlled Flooding Mesh Routing:** Multi-hop message delivery capped by degree-based TTL clamping ($7 \to 5$), 1000-entry LRU deduplication, randomized relay jitter ($10\text{--}220\text{ ms}$), split-horizon filtering, and degree-adaptive fanout.
-- **Volatile Ephemeral Storage & Instant Panic Wipe:** Messages live in volatile memory only. An emergency wipe instantly zeroizes private keys and wipes caches without confirmation.
+- **Store-and-Forward Couriers:** Delay-Tolerant Networking (DTN) for delivering messages across isolated network partitions through physical encounters.
+- **Instant Panic Wipe:** Physical zeroization of private keys, memory scrubbing, and disk storage wipe with zero confirmation dialog delay in emergencies.
 
 ---
 
@@ -29,17 +30,17 @@ Detailed architectural design and protocol reverse-engineering are documented in
 👉 **[BITCHAT_FLUTTER_ARCHITECTURE.md](BITCHAT_FLUTTER_ARCHITECTURE.md)**
 
 ### Zero-Overhaul Extensibility & Plugin Architecture
-To prevent the architectural stalling seen in monolithic mesh clients, DecChat employs an **Open-Closed Plugin Pattern**:
+To prevent architectural stalling, Grid employs an **Open-Closed Plugin Pattern**:
 - **Pure Infrastructure Mesh Engine:** The core `MeshEngine` handles only low-level networking (flooding, deduplication LRU, TTL clamping, randomized jitter, and link relaying). It has **zero knowledge** of specific message types or features.
 - **Protocol Feature Registry:** High-level features (Public Chat, Noise E2EE, Couriers, Files, Voice, Groups, Bulletin Boards) are self-contained `ProtocolFeatureModule` plugins that register dynamically. New features are added without modifying the core mesh engine.
 - **Tolerant Wire Codec:** Unknown future packet types (`MessageType.unknown`) are forwarded across the mesh safely without crashing or dropping packets.
 - **Pluggable Multi-Transport Pipeline:** Abstract `TransportPort` allows seamlessly adding new transports (e.g. Local LAN Wi-Fi Direct, LoRa radios, WebRTC) alongside BLE Mesh and Nostr.
-- **Configurable Ephemerality:** Clean repository port supporting both default volatile in-memory storage (zero disk trace) and optional encrypted local persistence.
+- **Configurable Ephemerality:** Clean repository port supporting both default volatile in-memory storage (zero disk trace) and optional encrypted local persistence with secure zeroization.
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│               FLUTTER PRESENTATION (Signal UI)         │
-│     Chat Screen, Peer Directory, QR Verification       │
+│             FLUTTER PRESENTATION (Minimalist UI)       │
+│     Chat Screen, Left Navigation Drawer, Peer Radar    │
 └──────────────────────────┬─────────────────────────────┘
                            │
 ┌──────────────────────────▼─────────────────────────────┐
@@ -94,7 +95,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - `FragmentCodec`: Large packet MTU slicing into 469-byte fragments and reassembly.
     - **Verification:** 15/15 unit tests passing, 0 analyzer issues.
   - [x] **Phase 2: Cryptographic Engine & Identity Subsystem** *(Completed & Merged)*
-    - `IdentityKeyPair`: Dual Curve25519 (X25519) + Ed25519 keys, persistent 8-byte peer ID (`SHA-256(noisePublicKey)[0..8]`), and symmetric Signal-style 60-digit safety numbers.
+    - `IdentityKeyPair`: Dual Curve25519 (X25519) + Ed25519 keys, persistent 8-byte peer ID (`SHA-256(noisePublicKey)[0..8]`), and symmetric 60-digit safety numbers.
     - `CryptoPort` & `CryptographyAdapter`: Abstract port & concrete adapter using `package:cryptography` for unforgeable canonical packet signing (`TTL=0`) and tamper-evident verification.
     - `NoiseCipherState`: ChaCha20-Poly1305 AEAD with BitChat 12-byte nonce layout, extracted 4-byte big-endian wire nonces, and 1024-bit sliding-window replay protection.
     - `NoiseSymmetricState`: Complete Noise Protocol framework SymmetricState abstraction (HKDF-SHA256, `mixHash`, `mixKey`, `mixKeyAndHash`, `encryptAndHash`, `decryptAndHash`, `split`).
@@ -122,13 +123,13 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - **Android BLE Dual-Role (`android/app/src/main/kotlin/com/bitchat/mesh/dec_chat/ble/`):**
       - `BleAdvertiserManager`: `BluetoothLeAdvertiser` with low-latency settings.
       - `BleGattServerManager`: `BluetoothGattServer` handling incoming writes and client subscriptions.
-      - `BleScannerManager`: `BluetoothLeScanner` with service UUID scan filters.
+      - `BleScannerManager`: `BluetoothLeScanner` with service UUID scan filters and "Grid" name matching.
       - `BleGattClientManager`: Client connections, MTU 512 negotiation, notifications, and packet transmission.
       - `BleRadioCoordinator`: Dual-role coordinator and duty-cycle scheduling.
       - `BlePlatformChannel`: MethodChannel and EventChannel bridge.
       - Permissions: `BLUETOOTH_SCAN`, `BLUETOOTH_ADVERTISE`, `BLUETOOTH_CONNECT`, `ACCESS_FINE_LOCATION`.
     - **Verification:** 46/46 unit tests passing across all suites including platform channel bridge test suite; 0 analyzer issues.
-  - [x] **Phase 5: Nostr Dual-Transport & Location Channels** *(Completed)*
+  - [x] **Phase 5: Nostr Dual-Transport & Location Channels** *(Completed & Merged)*
     - `Geohash`: Pure Dart Morton Z-order curve spatial indexing encoder, decoder, 8-neighbor adjacency calculator, and location channel validation (`#9q8yy`).
     - `NostrKind`: Protocol event enumeration covering NIP-01, NIP-04, NIP-28, and custom ephemeral BitChat mesh (20000) & geohash (20001) carriers.
     - `NostrEvent`: NIP-01 data model, canonical serialization `[0, pubkey, created_at, kind, tags, content]`, SHA-256 event ID verification, and transparent BitChat packet wrapping/unwrapping.
@@ -136,7 +137,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - `LocationChannelService`: Spatial channel manager resolving GPS coordinates to geohash channels and computing 9-cell boundary neighborhood coverage.
     - `MessageRouter`: Dual-transport coordinator implementing `TransportPort`, providing policy switching (`adaptive`, `bleOnly`, `nostrOnly`, `dual`), cross-medium deduplication via `SeenPacketCache`, and proximity-directed BLE-to-Nostr fallback.
     - **Verification:** 78/78 unit tests passing across all suites; 0 analyzer issues.
-  - [x] **Phase 6: Riverpod Application State & Signal UI** *(Completed)*
+  - [x] **Phase 6: Riverpod Application State & Domain Core** *(Completed & Merged)*
     - `ChatMessage` & `PeerModel`: Immutable presentation models with transport badges, delivery checkmarks, and symmetric 60-digit safety numbers.
     - `ChatCommand`: Command parser supporting BitChat power commands (`/msg`, `/who`, `/slap`, `/ping`, `/join`, `/clear`, `/panic`).
     - **Riverpod Application State:**
@@ -145,84 +146,49 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
       - `ChannelsNotifier`: Manages joined channels (`#mesh`, `#general`, `#9q8yy`).
       - `TimelineNotifier`: Ephemeral in-memory timeline buffer with packet dispatching and feature module routing.
       - `PanicController`: Instant zeroization and session wipe.
-    - **Signal UI Design Pattern (`lib/presentation/`):**
-      - `SignalTheme`: Clean dark aesthetic (`#121212` background, `#2C6BED` Signal Blue accent).
-      - `TransportBadge`: Dynamic indicator for BLE Mesh (Blue Bluetooth radio) vs Nostr (Purple Globe).
-      - `MessageBubble`: Chat bubble with bubble tail, encryption lock badge, and delivery receipts.
-      - `SlashCommandPopup`: Autocompleting command overlay.
-      - `SafetyNumberCard`: Symmetric 60-digit safety number comparison layout (12 blocks of 5 digits) with QR verification.
-      - `ConversationListScreen`, `ChatScreen`, `PeerDirectoryScreen`, `SafetyVerificationDialog`.
     - **Verification:** 109/109 unit and widget tests passing across all suites; 0 analyzer issues.
-  - [x] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish** *(Completed)*
+  - [x] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish** *(Completed & Merged)*
     - `CourierEnvelope`: Compact binary wire serialization for sealed DTN envelopes, hop budgeting, and expiration checking.
     - `CourierService`: Store-and-forward Delay-Tolerant Networking (DTN) outbox with spray-and-wait routing, data-muling across partitioned networks, direct encounter delivery, and capacity eviction.
     - `CourierModule`: Protocol feature module integrating `MessageType.courierEnvelope` (`0x04`) into `ProtocolFeatureRegistry` and `MeshEngine`.
     - `PanicZeroizationService`: In-place memory scrubbing (`scrubBytes`), courier outbox wipe, Noise session cipher state destruction, deduplication cache clearing, and radio shutdown.
     - `BitchatCoordinator`: Master application coordinator tying together identity, Noise encryption, controlled mesh flooding, courier DTN, and panic zeroization.
-    - `PanicController` Integration: Complete tie-in of the presentation layer's `/panic` command to the low-level zeroization pipeline.
     - `End-to-End Integration Suite`: Verification of direct 1-hop delivery, multi-node mobile data muling across network partitions, and panic zeroization.
     - **Verification:** 123/123 unit and integration tests passing across all suites; 0 analyzer issues.
-  - [x] **Phase 8: Native macOS Desktop BLE, Live Peer Discovery & Dual-Transport Hardening** *(Completed)*
-    - **Live Presence Discovery & Protocol Wiring:**
-      - `AnnouncementModule`: Protocol module capturing `MessageType.announce` packets and registering peers with nicknames, cryptographic public keys, and Signal-style safety numbers into `peersProvider`.
-      - `ChatMessageModule`: Protocol module routing `MessageType.message` packets into `timelineProvider` for real-time conversation updates.
-      - Periodic Announcement Timer: Added a 4-second recurring announcement routine in `BitchatCoordinator` to actively advertise node presence across BLE and Nostr transports.
-      - Eager Coordinator Activation: Bound `bitchatCoordinatorProvider` directly into `ConversationListScreen` on app launch.
-    - **Native macOS CoreBluetooth Integration (`macos/Runner/MainFlutterWindow.swift`):**
-      - Implemented native `BLEPeripheralController` (advertising + GATT server) and `BLECentralController` (scanning + GATT client) in Swift for native macOS desktop builds.
-      - Fixed radio initialization lifecycle bug where scanning/advertising guards returned early before Bluetooth reached `.poweredOn` state; added `shouldBeAdvertising` and `shouldBeScanning` state management to automatically trigger radio operation upon initialization.
-      - Updated macOS entitlements (`DebugProfile.entitlements` and `Release.entitlements`) with `com.apple.security.device.bluetooth` and `com.apple.security.network.client`.
-    - **Android BLE Scanner & Internet Permissions:**
-      - Added `INTERNET` and `ACCESS_NETWORK_STATE` to `AndroidManifest.xml` for seamless WebSocket connectivity.
-      - Enhanced `BleScannerManager.kt` with dual filter matching (`SERVICE_UUID` and `filterByName("DecChat")`) with software fallback in `onScanResult` for maximum cross-platform compatibility with Apple CoreBluetooth advertisements.
-    - **Nostr Relay Resilience & Unique Public Keys:**
-      - Replaced dead relays with confirmed active Nostr WebSocket relays (`wss://relay.primal.net`, `wss://offchain.pub`, `wss://nos.lol`).
-      - Derived unique 64-character lowercase hex public keys from node Ed25519 signing keys so peer packets are never dropped as self-echoes.
-      - Updated `MessageRouter` with non-blocking error guards (`.catchError((_) {})`) ensuring BLE and Nostr operate redundantly.
-    - **Field Verification:**
-      - Verified bidirectional peer discovery and live end-to-end encrypted chat between a native **macOS desktop app** on Apple Silicon Mac mini and a **Samsung Galaxy S23** running the Android release APK.
-    - **Verification:** 130/130 unit and integration tests passing across all suites (`test/application/peer_discovery_and_modules_test.dart`); 0 analyzer issues.
-  - [x] **Phase 9: Persistent Cryptographic Identity, Thread Unification & Zero-Trace Local Storage** *(Completed)*
-    - **Deterministic Identity Recovery (`IdentityKeyPair`):**
-      - Implemented serialization and deserialization (`toJson` and `fromJson`) for `IdentityKeyPair` via 32-byte private key seed extraction (`extractPrivateKeyBytes` and `newKeyPairFromSeed`).
-      - Guarantees 100% deterministic restoration of dual X25519 and Ed25519 key pairs, retaining identical 8-byte `peerId`, fingerprints, and Signal-style safety numbers across app restarts.
-    - **Zero-Trace Local Storage Subsystem (`LocalStorageService`):**
-      - Created decoupled persistent storage engine managing `identity.json`, `peers.json`, and `conversations.json` in sandboxed storage using `path_provider`.
-      - Write-through memory cache ensures instant UI read latencies and non-blocking asynchronous disk flushing.
-      - Integrated panic scrub: `wipeAll()` physically overwrites file disk buffers with zero bytes before unlinking inodes, strictly maintaining BitChat's zero-trace emergency wipe guarantee.
-      - Transparent in-memory fallback for headless CI and test environments.
-    - **State Management & Conversation Thread Unification:**
-      - `IdentityNotifier`: Restores persistent identity on startup, keeping the local node's `peerId` constant.
-      - `PeersNotifier`: Loads discovered contacts on boot; deduplicates incoming announcements by both `peerId` and `noisePublicKey` to prevent duplicate peer entries.
-      - `TimelineNotifier`: Restores conversation histories on boot; normalizes channel/peer keys (stripping `@` prefixes and lowercase) so that messages across app restarts are routed seamlessly into the same unified conversation thread for the same physical peer.
-      - `PanicController`: Orchestrates disk zeroization alongside in-memory timeline purging, radio shutdown, and ephemeral key regeneration.
-    - **Field Verification:**
-      - Tested on Samsung Galaxy S23: verified persistent peer ID (`c0e64ded`) across complete process terminations (`am force-stop`), retained conversation history under Direct Messages, and unified subsequent messages consecutively in the exact same thread.
-    - **Verification:** 140/140 unit and integration tests passing across all suites (`test/infrastructure/local_storage_service_test.dart`, `test/presentation/persistent_identity_and_threads_test.dart`, `test/domain/crypto_engine_test.dart`); 0 analyzer issues.
-
-- **Phase 10 — Editable Profile, Phone Number Discovery & Peer Search** *(feat/profile-phone-peer-search)*
-  - **Problem:** Users couldn't change their display name (`anon_node`), and there was no practical way to verify you're talking to the right person — cryptographic peer IDs are opaque hex strings nobody memorizes.
-  - **Discovery:** Phone numbers are a universal identifier everyone already knows for their contacts.
-  - **Solution:**
-    - **Broadcast phone number:** Added TLV tag `0x07` to `AnnouncementCodec` for optional phone number — old clients safely skip it (forward-compatible by design). Phone is opt-in and privacy-preserving (null if not set).
-    - **Edit Profile sheet:** Tap the avatar/name in the AppBar to open a modal sheet with Display Name + Phone Number fields, full validation, and live persistence to disk.
-    - **Formatted peer ID:** "Your Identity" card in `PeerDirectoryScreen` shows the full 16-char peer ID formatted as `C0E6 4DED E5F6 0718` with one-tap Copy button.
-    - **Live search:** Search bar in `PeerDirectoryScreen` filters discovered peers in real-time by name (substring), phone number (digit-normalized), or peer ID prefix.
-    - **Slash commands:** `/nick <name>` and `/phone <number>` (with `/phone clear` to remove) work from any chat composer.
-    - **Data flow:** `IdentityKeyPair` → `IdentityState` → broadcast in every `AnnouncementPayload` → `PeerModel` → persisted in `peers.json` → searchable in UI.
-    - **Verification:** 163/163 tests passing; 0 analyzer issues.
+  - [x] **Phase 8: Native macOS Desktop BLE, Live Peer Discovery & Dual-Transport Hardening** *(Completed & Merged)*
+    - `AnnouncementModule`: Protocol module capturing `MessageType.announce` packets and registering peers with nicknames, cryptographic public keys, and symmetric safety numbers into `peersProvider`.
+    - `ChatMessageModule`: Protocol module routing `MessageType.message` packets into `timelineProvider` for real-time conversation updates.
+    - Native macOS CoreBluetooth peripheral/central integration with dynamic state management.
+    - **Verification:** 130/130 unit and integration tests passing across all suites; 0 analyzer issues.
+  - [x] **Phase 9: Persistent Cryptographic Identity, Thread Unification & Zero-Trace Local Storage** *(Completed & Merged)*
+    - Deterministic key recovery from 32-byte seed retaining identical `peerId` across restarts.
+    - Decoupled persistent local storage subsystem managing `identity.json`, `peers.json`, and `conversations.json` with write-through memory caching and file disk buffer overwriting (`wipeAll()`).
+    - **Verification:** 140/140 unit and integration tests passing; 0 analyzer issues.
+  - [x] **Phase 10: Editable Profile, Phone Number Discovery & Peer Search** *(Completed & Merged)*
+    - Broadcast phone number via optional TLV tag `0x07` in `AnnouncementCodec`.
+    - Edit Profile sheet for display name and phone number with live persistence.
+    - Real-time search in `PeerDirectoryScreen` filtering peers by nickname, formatted phone number, or peer ID prefix.
+    - Slash commands: `/nick <name>` and `/phone <number>` (or `/phone clear`).
+    - **Verification:** 163/163 unit and widget tests passing; 0 analyzer issues.
+  - [x] **Phase 11: Minimal Monochrome Design System, Left Navigation Drawer & App Rebrand to Grid** *(Completed)*
+    - **Monochrome Crisp Palette (`AppTheme`)**: High-contrast pure white/zinc-50 (`#FAFAFA`) accents with deep dark (`#09090B`) text and icon contrast.
+    - **Left Navigation Drawer (`AppDrawer`)**: Clean branding header with live "Mesh Network Online" indicator, quick navigation to Messages, Peers radar (with live peer count badge), joined Channels, and pinned bottom Account Tab with user initial squircle avatar and one-tap metadata editing.
+    - **Streamlined Conversation View**: Removed redundant floating action button to deliver an uncluttered viewport.
+    - **Floating Capsule Composer**: Pill-shaped input with dynamic circular send button transitioning to pure white with upward arrow (`Icons.arrow_upward_rounded`) on text entry.
+    - **Rebrand to Grid**: Unified application naming across platform manifests, UI headers, BLE local names, and storage namespaces.
+    - **Verification:** 167/167 unit, widget, and integration tests passing; 0 analyzer issues.
 
 ---
 
 ## 📦 Repository & Local Environment
 
-- **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
+- **Git Remote:** `https://github.com/sushantdev-git/grid.git` (formerly `dec-chat.git`)
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/profile-phone-peer-search`
+- **Active Feature Branch:** `feat/rebrand-to-grid`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain
-- **Flutter SDK:** `3.47.4 • channel stable` (Installed at `~/development/flutter`)
+- **Flutter SDK:** `3.47.4 • channel stable`
 - **Dart SDK:** `3.13.3 • macos_arm64`
 - **Run Tests:**
   ```bash

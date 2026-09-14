@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dec_chat/domain/entities/identity_key_pair.dart';
-import 'package:dec_chat/domain/enums/transport_medium.dart';
-import 'package:dec_chat/domain/ports/transport_port.dart';
-import 'package:dec_chat/domain/services/courier_service.dart';
-import 'package:dec_chat/domain/services/noise_session_manager.dart';
-import 'package:dec_chat/domain/services/panic_zeroization_service.dart';
+import 'package:grid/domain/entities/identity_key_pair.dart';
+import 'package:grid/domain/enums/transport_medium.dart';
+import 'package:grid/domain/ports/transport_port.dart';
+import 'package:grid/domain/services/courier_service.dart';
+import 'package:grid/domain/services/noise_session_manager.dart';
+import 'package:grid/domain/services/panic_zeroization_service.dart';
 
 class MockPanicTransport implements TransportPort {
   bool wasStopped = false;

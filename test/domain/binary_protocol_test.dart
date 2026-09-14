@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dec_chat/core/utils/binary_reader.dart';
-import 'package:dec_chat/core/utils/binary_writer.dart';
-import 'package:dec_chat/core/utils/message_padding.dart';
-import 'package:dec_chat/domain/entities/bitchat_packet.dart';
-import 'package:dec_chat/domain/enums/message_type.dart';
-import 'package:dec_chat/infrastructure/codecs/announcement_codec.dart';
-import 'package:dec_chat/infrastructure/codecs/binary_protocol_codec.dart';
-import 'package:dec_chat/infrastructure/codecs/fragment_codec.dart';
+import 'package:grid/core/utils/binary_reader.dart';
+import 'package:grid/core/utils/binary_writer.dart';
+import 'package:grid/core/utils/message_padding.dart';
+import 'package:grid/domain/entities/bitchat_packet.dart';
+import 'package:grid/domain/enums/message_type.dart';
+import 'package:grid/infrastructure/codecs/announcement_codec.dart';
+import 'package:grid/infrastructure/codecs/binary_protocol_codec.dart';
+import 'package:grid/infrastructure/codecs/fragment_codec.dart';
 
 void main() {
   group('BinaryReader & BinaryWriter', () {

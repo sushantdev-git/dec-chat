@@ -1,5 +1,5 @@
-name: dec_chat
-description: "DecChat: Decentralized Peer-to-Peer Mesh & Nostr Messenger"
+name: grid
+description: "Grid: Decentralized Peer-to-Peer Mesh & Nostr Messenger"
 publish_to: 'none'
 version: 0.1.0+1
 

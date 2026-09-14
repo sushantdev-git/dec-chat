@@ -1,11 +1,11 @@
 // ignore_for_file: prefer_const_constructors
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dec_chat/infrastructure/services/local_storage_service.dart';
-import 'package:dec_chat/presentation/models/peer_model.dart';
-import 'package:dec_chat/presentation/state/identity_state.dart';
-import 'package:dec_chat/presentation/utils/chat_command.dart';
-import 'package:dec_chat/domain/enums/transport_medium.dart';
+import 'package:grid/infrastructure/services/local_storage_service.dart';
+import 'package:grid/presentation/models/peer_model.dart';
+import 'package:grid/presentation/state/identity_state.dart';
+import 'package:grid/presentation/utils/chat_command.dart';
+import 'package:grid/domain/enums/transport_medium.dart';
 
 /// Phase 10: Profile editing and phone-based peer search tests.
 void main() {

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dec_chat/domain/enums/transport_medium.dart';
-import 'package:dec_chat/presentation/state/channels_notifier.dart';
-import 'package:dec_chat/presentation/state/peers_notifier.dart';
+import 'package:grid/domain/enums/transport_medium.dart';
+import 'package:grid/presentation/state/channels_notifier.dart';
+import 'package:grid/presentation/state/peers_notifier.dart';
 
 void main() {
   group('PeersNotifier Peer Directory State', () {

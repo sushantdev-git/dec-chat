@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dec_chat/domain/services/location_channel_service.dart';
+import 'package:grid/domain/services/location_channel_service.dart';
 
 void main() {
   group('LocationChannelService Spatial Channel Management', () {

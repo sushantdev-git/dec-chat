@@ -170,7 +170,7 @@ class ConversationListScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'DecChat',
+              'Grid',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 18,

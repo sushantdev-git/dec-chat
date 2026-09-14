@@ -3,17 +3,17 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dec_chat/application/bitchat_coordinator.dart';
-import 'package:dec_chat/domain/entities/bitchat_packet.dart';
-import 'package:dec_chat/domain/enums/message_type.dart';
-import 'package:dec_chat/domain/enums/transport_medium.dart';
-import 'package:dec_chat/domain/ports/transport_port.dart';
-import 'package:dec_chat/infrastructure/services/local_storage_service.dart';
-import 'package:dec_chat/presentation/models/chat_message.dart';
-import 'package:dec_chat/presentation/state/identity_state.dart';
-import 'package:dec_chat/presentation/state/panic_controller.dart';
-import 'package:dec_chat/presentation/state/peers_notifier.dart';
-import 'package:dec_chat/presentation/state/timeline_notifier.dart';
+import 'package:grid/application/bitchat_coordinator.dart';
+import 'package:grid/domain/entities/bitchat_packet.dart';
+import 'package:grid/domain/enums/message_type.dart';
+import 'package:grid/domain/enums/transport_medium.dart';
+import 'package:grid/domain/ports/transport_port.dart';
+import 'package:grid/infrastructure/services/local_storage_service.dart';
+import 'package:grid/presentation/models/chat_message.dart';
+import 'package:grid/presentation/state/identity_state.dart';
+import 'package:grid/presentation/state/panic_controller.dart';
+import 'package:grid/presentation/state/peers_notifier.dart';
+import 'package:grid/presentation/state/timeline_notifier.dart';
 
 void main() {
   group('Persistent Identity & Thread Unification Across App Restarts', () {

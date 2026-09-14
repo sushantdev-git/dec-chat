@@ -33,7 +33,15 @@ class LocalStorageService {
 
     try {
       final docDir = await getApplicationDocumentsDirectory();
-      final appDir = Directory('${docDir.path}/dec_chat');
+      var appDir = Directory('${docDir.path}/grid');
+      final legacyDir = Directory('${docDir.path}/dec_chat');
+      if (!await appDir.exists() && await legacyDir.exists()) {
+        try {
+          await legacyDir.rename(appDir.path);
+        } catch (_) {
+          appDir = legacyDir;
+        }
+      }
       if (!await appDir.exists()) {
         await appDir.create(recursive: true);
       }

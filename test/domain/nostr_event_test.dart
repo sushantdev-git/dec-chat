@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crypto/crypto.dart' as crypto;
-import 'package:dec_chat/domain/entities/bitchat_packet.dart';
-import 'package:dec_chat/domain/entities/nostr_event.dart';
-import 'package:dec_chat/domain/enums/message_type.dart';
-import 'package:dec_chat/domain/enums/nostr_kind.dart';
+import 'package:grid/domain/entities/bitchat_packet.dart';
+import 'package:grid/domain/entities/nostr_event.dart';
+import 'package:grid/domain/enums/message_type.dart';
+import 'package:grid/domain/enums/nostr_kind.dart';
 
 void main() {
   group('NostrEvent NIP-01 Protocol & Carrier', () {

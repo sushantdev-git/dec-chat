@@ -5,13 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import 'package:dec_chat/domain/entities/bitchat_packet.dart';
-import 'package:dec_chat/domain/entities/nostr_event.dart';
-import 'package:dec_chat/domain/enums/message_type.dart';
-import 'package:dec_chat/domain/enums/nostr_kind.dart';
-import 'package:dec_chat/domain/enums/transport_medium.dart';
-import 'package:dec_chat/infrastructure/adapters/nostr_relay_adapter.dart';
-import 'package:dec_chat/infrastructure/codecs/binary_protocol_codec.dart';
+import 'package:grid/domain/entities/bitchat_packet.dart';
+import 'package:grid/domain/entities/nostr_event.dart';
+import 'package:grid/domain/enums/message_type.dart';
+import 'package:grid/domain/enums/nostr_kind.dart';
+import 'package:grid/domain/enums/transport_medium.dart';
+import 'package:grid/infrastructure/adapters/nostr_relay_adapter.dart';
+import 'package:grid/infrastructure/codecs/binary_protocol_codec.dart';
 
 class MockWebSocketSink implements WebSocketSink {
   final MockWebSocketChannel channel;

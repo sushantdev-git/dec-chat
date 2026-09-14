@@ -25,7 +25,8 @@ class BleScannerManager(
             if (result != null) {
                 val record = result.scanRecord
                 val matchesUuid = record?.serviceUuids?.any { it.uuid == BleConstants.SERVICE_UUID } == true
-                val matchesName = record?.deviceName?.contains("DecChat", ignoreCase = true) == true
+                val matchesName = record?.deviceName?.contains("Grid", ignoreCase = true) == true ||
+                    record?.deviceName?.contains("DecChat", ignoreCase = true) == true
                 if (matchesUuid || matchesName) {
                     listener.onDeviceDiscovered(result)
                 }
@@ -46,7 +47,10 @@ class BleScannerManager(
         val filterByUuid = ScanFilter.Builder()
             .setServiceUuid(ParcelUuid(BleConstants.SERVICE_UUID))
             .build()
-        val filterByName = ScanFilter.Builder()
+        val filterByNameGrid = ScanFilter.Builder()
+            .setDeviceName("Grid")
+            .build()
+        val filterByNameLegacy = ScanFilter.Builder()
             .setDeviceName("DecChat")
             .build()
 
@@ -56,7 +60,7 @@ class BleScannerManager(
             .build()
 
         try {
-            leScanner.startScan(listOf(filterByUuid, filterByName), settings, callback)
+            leScanner.startScan(listOf(filterByUuid, filterByNameGrid, filterByNameLegacy), settings, callback)
             isScanning = true
         } catch (e: SecurityException) {
             Log.e("BleScanner", "Permission error starting scan", e)

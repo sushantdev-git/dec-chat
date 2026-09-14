@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dec_chat/domain/enums/transport_medium.dart';
-import 'package:dec_chat/infrastructure/services/local_storage_service.dart';
-import 'package:dec_chat/presentation/models/chat_message.dart';
-import 'package:dec_chat/presentation/models/peer_model.dart';
+import 'package:grid/domain/enums/transport_medium.dart';
+import 'package:grid/infrastructure/services/local_storage_service.dart';
+import 'package:grid/presentation/models/chat_message.dart';
+import 'package:grid/presentation/models/peer_model.dart';
 
 void main() {
   group('LocalStorageService (File-backed)', () {
