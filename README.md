@@ -136,7 +136,23 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - `LocationChannelService`: Spatial channel manager resolving GPS coordinates to geohash channels and computing 9-cell boundary neighborhood coverage.
     - `MessageRouter`: Dual-transport coordinator implementing `TransportPort`, providing policy switching (`adaptive`, `bleOnly`, `nostrOnly`, `dual`), cross-medium deduplication via `SeenPacketCache`, and proximity-directed BLE-to-Nostr fallback.
     - **Verification:** 78/78 unit tests passing across all suites; 0 analyzer issues.
-  - [ ] **Phase 6: Riverpod Application State & Signal UI** (Conversation threads, peer directory, message bubbles, IRC slash commands)
+  - [x] **Phase 6: Riverpod Application State & Signal UI** *(Completed)*
+    - `ChatMessage` & `PeerModel`: Immutable presentation models with transport badges, delivery checkmarks, and symmetric 60-digit safety numbers.
+    - `ChatCommand`: Command parser supporting BitChat power commands (`/msg`, `/who`, `/slap`, `/ping`, `/join`, `/clear`, `/panic`).
+    - **Riverpod Application State:**
+      - `IdentityNotifier`: Manages local key pairs, nickname, and peer ID.
+      - `PeersNotifier`: Tracks active/discovered peers, RSSI signal indicators, hop count, and safety verification status.
+      - `ChannelsNotifier`: Manages joined channels (`#mesh`, `#general`, `#9q8yy`).
+      - `TimelineNotifier`: Ephemeral in-memory timeline buffer with packet dispatching and feature module routing.
+      - `PanicController`: Instant zeroization and session wipe.
+    - **Signal UI Design Pattern (`lib/presentation/`):**
+      - `SignalTheme`: Clean dark aesthetic (`#121212` background, `#2C6BED` Signal Blue accent).
+      - `TransportBadge`: Dynamic indicator for BLE Mesh (Blue Bluetooth radio) vs Nostr (Purple Globe).
+      - `MessageBubble`: Chat bubble with bubble tail, encryption lock badge, and delivery receipts.
+      - `SlashCommandPopup`: Autocompleting command overlay.
+      - `SafetyNumberCard`: Symmetric 60-digit safety number comparison layout (12 blocks of 5 digits) with QR verification.
+      - `ConversationListScreen`, `ChatScreen`, `PeerDirectoryScreen`, `SafetyVerificationDialog`.
+    - **Verification:** 109/109 unit and widget tests passing across all suites; 0 analyzer issues.
   - [ ] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish** (Spray-and-wait outbox, instant zeroization, QR safety verification)
   
 ---
@@ -145,7 +161,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/nostr-location-channels`
+- **Active Feature Branch:** `feat/riverpod-state-signal-ui`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain
