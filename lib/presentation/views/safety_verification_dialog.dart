@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/peer_model.dart';
 import '../state/peers_notifier.dart';
+import '../theme/app_theme.dart';
 import '../widgets/safety_number_card.dart';
 
 /// Modal bottom sheet presenting peer safety numbers and in-person cryptographic verification.
@@ -31,11 +32,11 @@ class SafetyVerificationSheet extends ConsumerWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: AppTheme.darkCardElevated,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
-        top: 12,
+        top: 14,
         left: 16,
         right: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,

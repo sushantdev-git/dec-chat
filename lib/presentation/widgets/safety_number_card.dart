@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/peer_model.dart';
-import '../theme/signal_theme.dart';
+import '../theme/app_theme.dart';
 
-/// Signal-style 60-digit safety number comparison card with in-person verification toggle.
+/// Cryptographic 60-digit safety number comparison card with in-person verification toggle.
 class SafetyNumberCard extends StatelessWidget {
   final PeerModel peer;
   final VoidCallback onToggleVerified;
@@ -16,10 +16,16 @@ class SafetyNumberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final safetyNumber = peer.formattedSafetyNumber ?? '00000 00000 00000 00000 00000 00000 00000 00000 00000 00000 00000 00000';
+    final safetyNumber = peer.formattedSafetyNumber ??
+        '00000 00000 00000 00000 00000 00000 00000 00000 00000 00000 00000 00000';
     final blocks = safetyNumber.split(' ');
 
     return Card(
+      color: AppTheme.darkCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: AppTheme.squircleLarge,
+        side: BorderSide(color: AppTheme.darkBorderSubtle, width: 0.8),
+      ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -31,7 +37,7 @@ class SafetyNumberCard extends StatelessWidget {
               children: [
                 Icon(
                   peer.isVerified ? Icons.verified_user : Icons.shield_outlined,
-                  color: peer.isVerified ? SignalTheme.verifiedGreen : SignalTheme.bleMeshBlue,
+                  color: peer.isVerified ? AppTheme.verifiedGreen : AppTheme.textSecondary,
                   size: 26,
                 ),
                 const SizedBox(width: 8),
@@ -40,7 +46,7 @@ class SafetyNumberCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: SignalTheme.textPrimary,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
               ],
@@ -49,7 +55,7 @@ class SafetyNumberCard extends StatelessWidget {
             const Text(
               'Compare these numbers in person with your contact to verify that your messages are end-to-end encrypted.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: SignalTheme.textSecondary, height: 1.4),
+              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.4),
             ),
             const SizedBox(height: 18),
 
@@ -58,8 +64,8 @@ class SafetyNumberCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: SignalTheme.darkBorder),
+                borderRadius: AppTheme.squircleMedium,
+                border: Border.all(color: AppTheme.darkBorderSubtle),
               ),
               child: GridView.builder(
                 shrinkWrap: true,
@@ -80,7 +86,7 @@ class SafetyNumberCard extends StatelessWidget {
                         fontSize: 15,
                         letterSpacing: 1.2,
                         fontWeight: FontWeight.w700,
-                        color: SignalTheme.textPrimary,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                   );
@@ -102,9 +108,9 @@ class SafetyNumberCard extends StatelessWidget {
               },
               icon: const Icon(Icons.copy, size: 16),
               label: const Text('Copy Safety Number'),
-              style: TextButton.styleFrom(foregroundColor: SignalTheme.signalBlue),
+              style: TextButton.styleFrom(foregroundColor: AppTheme.textPrimary),
             ),
-            const Divider(height: 24),
+            const Divider(height: 24, color: AppTheme.darkBorderSubtle),
 
             // Verification toggle
             SwitchListTile(
@@ -119,10 +125,10 @@ class SafetyNumberCard extends StatelessWidget {
                     : 'Unverified peer identity',
                 style: TextStyle(
                   fontSize: 12,
-                  color: peer.isVerified ? SignalTheme.verifiedGreen : SignalTheme.textSecondary,
+                  color: peer.isVerified ? AppTheme.verifiedGreen : AppTheme.textSecondary,
                 ),
               ),
-              activeTrackColor: SignalTheme.verifiedGreen,
+              activeTrackColor: AppTheme.verifiedGreen,
               value: peer.isVerified,
               onChanged: (_) => onToggleVerified(),
             ),

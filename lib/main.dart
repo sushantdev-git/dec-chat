@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'presentation/theme/signal_theme.dart';
+import 'presentation/theme/app_theme.dart';
 import 'presentation/views/conversation_list_screen.dart';
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
   );
 }
 
-/// DecChat main application entry point adhering to the Signal UI design pattern.
+/// DecChat main application entry point adhering to minimalist design.
 class DecChatApp extends StatelessWidget {
   const DecChatApp({super.key});
 
@@ -22,7 +22,7 @@ class DecChatApp extends StatelessWidget {
     return MaterialApp(
       title: 'DecChat',
       debugShowCheckedModeBanner: false,
-      theme: SignalTheme.darkTheme,
+      theme: AppTheme.darkTheme,
       home: const ConversationListScreen(),
     );
   }

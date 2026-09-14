@@ -5,15 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dec_chat/domain/enums/transport_medium.dart';
 import 'package:dec_chat/presentation/models/chat_message.dart';
 import 'package:dec_chat/presentation/models/peer_model.dart';
-import 'package:dec_chat/presentation/theme/signal_theme.dart';
+import 'package:dec_chat/presentation/theme/app_theme.dart';
 import 'package:dec_chat/presentation/views/chat_screen.dart';
 import 'package:dec_chat/presentation/views/conversation_list_screen.dart';
+import 'package:dec_chat/presentation/widgets/app_drawer.dart';
 import 'package:dec_chat/presentation/widgets/message_bubble.dart';
 import 'package:dec_chat/presentation/widgets/safety_number_card.dart';
 import 'package:dec_chat/presentation/widgets/transport_badge.dart';
 
 void main() {
-  group('Signal UI Custom Widgets', () {
+  group('Minimalist Custom UI Widgets', () {
     testWidgets('TransportBadge renders BLE Mesh and Nostr indicators', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -66,7 +67,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: SignalTheme.darkTheme,
+          theme: AppTheme.darkTheme,
           home: Scaffold(
             body: ListView(
               children: [
@@ -90,6 +91,35 @@ void main() {
       expect(find.byIcon(Icons.done_all), findsOneWidget);
     });
 
+    testWidgets('MessageBubble clusters correctly with BubblePosition', (tester) async {
+      final msg = ChatMessage(
+        id: '1',
+        senderId: 'local',
+        senderNickname: 'Me',
+        content: 'Clustered message',
+        timestamp: DateTime.now(),
+        isOutgoing: true,
+        channelOrPeerId: 'peer1',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: Column(
+              children: [
+                MessageBubble(message: msg, position: BubblePosition.first),
+                MessageBubble(message: msg, position: BubblePosition.middle),
+                MessageBubble(message: msg, position: BubblePosition.last),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Clustered message'), findsNWidgets(3));
+    });
+
     testWidgets('SafetyNumberCard displays 12 blocks and triggers verification toggle', (tester) async {
       var toggleCalled = false;
       final peer = PeerModel(
@@ -102,7 +132,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: SignalTheme.darkTheme,
+          theme: AppTheme.darkTheme,
           home: Scaffold(
             body: SafetyNumberCard(
               peer: peer,
@@ -124,7 +154,7 @@ void main() {
       expect(toggleCalled, isTrue);
     });
 
-    testWidgets('ConversationListScreen pumps and displays channels and peers FAB', (tester) async {
+    testWidgets('ConversationListScreen pumps and displays channels and navigation menu', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -142,9 +172,9 @@ void main() {
       // Direct Messages section
       expect(find.text('DIRECT MESSAGES'), findsOneWidget);
 
-      // FAB
-      expect(find.byType(FloatingActionButton), findsOneWidget);
-      expect(find.text('Peers (0)'), findsOneWidget);
+      // Menu button is present, FAB is removed
+      expect(find.byIcon(Icons.menu), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
     });
 
     testWidgets('ChatScreen sends message and displays message bubble', (tester) async {
@@ -162,7 +192,7 @@ void main() {
 
       // Enter text and send
       await tester.enterText(find.byType(TextField), 'Hello DecChat World!');
-      await tester.tap(find.byIcon(Icons.send));
+      await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
       await tester.pump();
 
       expect(find.text('Hello DecChat World!'), findsOneWidget);
@@ -184,6 +214,85 @@ void main() {
       // Autocomplete popup should show /slap
       expect(find.text('/slap'), findsOneWidget);
       expect(find.text('Slap a peer with a large trout'), findsOneWidget);
+    });
+
+    testWidgets('AppDrawer opens via hamburger menu and shows navigation and account tab', (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: ConversationListScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Tap hamburger menu icon
+      expect(find.byIcon(Icons.menu), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      // Drawer is now open
+      expect(find.byType(Drawer), findsOneWidget);
+      expect(find.text('Messages'), findsOneWidget);
+      expect(find.text('Peers'), findsOneWidget);
+      expect(find.text('Mesh Network Online'), findsOneWidget);
+
+      // Bottom account tab is displayed with edit icon
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+    });
+
+    testWidgets('AppDrawer calls onOpenEditProfile when account tab is tapped', (tester) async {
+      var profileOpened = false;
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              drawer: AppDrawer(
+                onOpenEditProfile: () => profileOpened = true,
+              ),
+              body: Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Open drawer
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      // Tap bottom account tab
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+
+      expect(profileOpened, isTrue);
+    });
+
+    testWidgets('AppDrawer tapping Peers navigates to PeerDirectoryScreen', (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: ConversationListScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Open drawer
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      // Tap 'Peers' item
+      await tester.tap(find.text('Peers'));
+      await tester.pumpAndSettle();
+
+      // Peer Directory screen should be visible
+      expect(find.text('Discovered Peers'), findsOneWidget);
     });
   });
 }
