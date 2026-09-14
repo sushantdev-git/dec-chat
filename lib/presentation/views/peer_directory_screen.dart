@@ -52,97 +52,98 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
     return false;
   }
 
-  void _copyId(BuildContext context, String id) {
-    Clipboard.setData(ClipboardData(text: id));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Peer ID copied to clipboard'),
-        backgroundColor: AppTheme.primaryBlueDark,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final identity = ref.watch(identityProvider);
-    final peersState = ref.watch(peersProvider);
-    final allPeers = peersState.allPeers;
-    final filtered = allPeers.where(_matches).toList();
-
-    // Format peer ID as groups of 4: C0E6 4DED E5F6 0718
-    String formatId(String hex) {
-      final upper = hex.toUpperCase();
-      final buf = StringBuffer();
-      for (int i = 0; i < upper.length; i++) {
-        if (i > 0 && i % 4 == 0) buf.write(' ');
-        buf.write(upper[i]);
-      }
-      return buf.toString();
+    void _copyId(BuildContext context, String id) {
+      Clipboard.setData(ClipboardData(text: id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Peer ID copied to clipboard'),
+          backgroundColor: AppTheme.darkCardElevated,
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Discovered Peers', style: TextStyle(fontWeight: FontWeight.w700)),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        children: [
-          // ── Your Identity Card ──────────────────────────────────────────
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.darkCard,
-              borderRadius: AppTheme.squircleLarge,
-              border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.primaryBlueDark,
-                    borderRadius: AppTheme.squircleMedium,
-                  ),
-                  child: Center(
-                    child: Text(
-                      identity.nickname.isNotEmpty ? identity.nickname[0].toUpperCase() : '?',
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+    @override
+    Widget build(BuildContext context) {
+      final identity = ref.watch(identityProvider);
+      final peersState = ref.watch(peersProvider);
+      final allPeers = peersState.allPeers;
+      final filtered = allPeers.where(_matches).toList();
+
+      // Format peer ID as groups of 4: C0E6 4DED E5F6 0718
+      String formatId(String hex) {
+        final upper = hex.toUpperCase();
+        final buf = StringBuffer();
+        for (int i = 0; i < upper.length; i++) {
+          if (i > 0 && i % 4 == 0) buf.write(' ');
+          buf.write(upper[i]);
+        }
+        return buf.toString();
+      }
+
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Discovered Peers', style: TextStyle(fontWeight: FontWeight.w700)),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          children: [
+            // ── Your Identity Card ──────────────────────────────────────────
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.darkCard,
+                borderRadius: AppTheme.squircleLarge,
+                border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: const BoxDecoration(
+                      color: AppTheme.primaryAccent,
+                      borderRadius: AppTheme.squircleMedium,
+                    ),
+                    child: Center(
+                      child: Text(
+                        identity.nickname.isNotEmpty ? identity.nickname[0].toUpperCase() : '?',
+                        style: const TextStyle(color: AppTheme.onPrimaryAccent, fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              identity.nickname,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.textPrimary,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                identity.nickname,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.textPrimary,
+                                ),
                               ),
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryBlue.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentSubtle,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
+                              ),
+                              child: const Text(
+                                'You',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                              ),
                             ),
-                            child: const Text(
-                              'You',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.bleMeshBlue),
-                            ),
-                          ),
-                        ],
+                          ],
                       ),
                       const SizedBox(height: 6),
                       // Formatted peer ID with copy button
@@ -228,7 +229,7 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                 ),
                 focusedBorder: const OutlineInputBorder(
                   borderRadius: AppTheme.pill,
-                  borderSide: BorderSide(color: AppTheme.primaryBlue, width: 1.2),
+                  borderSide: BorderSide(color: AppTheme.primaryAccent, width: 1.2),
                 ),
               ),
             ),
@@ -319,7 +320,7 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
                       : (peer.isDirectNeighbor ? 'Nearby' : '${peer.hops}-hop relay'),
                   style: TextStyle(
                     fontSize: 12,
-                    color: _isPhoneMatch(peer) ? AppTheme.primaryBlue : AppTheme.textSecondary,
+                    color: _isPhoneMatch(peer) ? AppTheme.textPrimary : AppTheme.textSecondary,
                   ),
                 ),
                 trailing: IconButton(

@@ -78,7 +78,7 @@ class MessageBubble extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.bleMeshBlue,
+                          color: AppTheme.textSecondary,
                         ),
                       ),
                       const SizedBox(width: 6),

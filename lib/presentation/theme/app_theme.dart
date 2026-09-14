@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 
 /// Minimalist design system theme constants and configuration.
 class AppTheme {
-  // Brand & Accent Colors
-  static const Color primaryBlue = Color(0xFF2563EB); // Electric Royal Blue
-  static const Color primaryBlueDark = Color(0xFF1D4ED8);
+  // Brand & Accent Colors (Monochrome Crisp Palette)
+  static const Color primaryAccent = Color(0xFFFAFAFA); // Crisp Zinc-50 / Pure White
+  static const Color onPrimaryAccent = Color(0xFF09090B); // Deep Zinc-950 Black
+  static const Color accentSubtle = Color(0x1FFFFFFF); // 12% white fill for chips/badges
+  static const Color primaryBlue = primaryAccent; // Backward-compatible alias
+  static const Color primaryBlueDark = Color(0xFFE4E4E7); // Zinc-200
+  static const Color bleMeshBlue = Color(0xFFE4E4E7); // Crisp Zinc-200 for radio/mesh
   static const Color verifiedGreen = Color(0xFF34D399); // Emerald-400
   static const Color panicRed = Color(0xFFF87171); // Rose-400
-  static const Color bleMeshBlue = Color(0xFF38BDF8); // Sky-400
   static const Color nostrPurple = Color(0xFFC084FC); // Purple-400
 
   // Neutral Surfaces (Zinc Palette)
@@ -46,10 +49,10 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: darkBackground,
       colorScheme: const ColorScheme.dark(
-        primary: primaryBlue,
-        onPrimary: Colors.white,
-        secondary: bleMeshBlue,
-        onSecondary: Colors.black,
+        primary: primaryAccent,
+        onPrimary: onPrimaryAccent,
+        secondary: textSecondary,
+        onSecondary: onPrimaryAccent,
         surface: darkSurface,
         onSurface: textPrimary,
         error: panicRed,
@@ -83,7 +86,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusPill),
-          borderSide: const BorderSide(color: primaryBlue, width: 1.5),
+          borderSide: const BorderSide(color: primaryAccent, width: 1.2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       ),

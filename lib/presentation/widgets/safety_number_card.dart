@@ -37,7 +37,7 @@ class SafetyNumberCard extends StatelessWidget {
               children: [
                 Icon(
                   peer.isVerified ? Icons.verified_user : Icons.shield_outlined,
-                  color: peer.isVerified ? AppTheme.verifiedGreen : AppTheme.bleMeshBlue,
+                  color: peer.isVerified ? AppTheme.verifiedGreen : AppTheme.textSecondary,
                   size: 26,
                 ),
                 const SizedBox(width: 8),
@@ -108,7 +108,7 @@ class SafetyNumberCard extends StatelessWidget {
               },
               icon: const Icon(Icons.copy, size: 16),
               label: const Text('Copy Safety Number'),
-              style: TextButton.styleFrom(foregroundColor: AppTheme.bleMeshBlue),
+              style: TextButton.styleFrom(foregroundColor: AppTheme.textPrimary),
             ),
             const Divider(height: 24, color: AppTheme.darkBorderSubtle),
 

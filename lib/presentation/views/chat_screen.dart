@@ -335,13 +335,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: hasText ? AppTheme.primaryBlue : AppTheme.darkBorder,
+                                  color: hasText ? AppTheme.primaryAccent : AppTheme.darkBorder,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  Icons.send,
-                                  color: hasText ? Colors.white : AppTheme.textMuted,
-                                  size: 16,
+                                  Icons.arrow_upward_rounded,
+                                  color: hasText ? AppTheme.onPrimaryAccent : AppTheme.textMuted,
+                                  size: 18,
                                 ),
                               ),
                             ),

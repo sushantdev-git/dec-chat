@@ -192,7 +192,7 @@ void main() {
 
       // Enter text and send
       await tester.enterText(find.byType(TextField), 'Hello DecChat World!');
-      await tester.tap(find.byIcon(Icons.send));
+      await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
       await tester.pump();
 
       expect(find.text('Hello DecChat World!'), findsOneWidget);

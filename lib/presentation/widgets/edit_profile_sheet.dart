@@ -216,8 +216,8 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryBlue,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppTheme.primaryAccent,
+                    foregroundColor: AppTheme.onPrimaryAccent,
                     shape: const RoundedRectangleBorder(borderRadius: AppTheme.pill),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),

@@ -156,7 +156,7 @@ class AppDrawer extends ConsumerWidget {
                     child: const Icon(
                       Icons.hub_outlined,
                       size: 20,
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -186,7 +186,7 @@ class AppDrawer extends ConsumerWidget {
                             const Flexible(
                               child: Text(
                                 'Mesh Network Online',
-                                style: TextStyle(fontSize: 11, color: AppTheme.bleMeshBlue),
+                                style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -210,7 +210,7 @@ class AppDrawer extends ConsumerWidget {
                   ListTile(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     tileColor: AppTheme.darkCardElevated,
-                    leading: const Icon(Icons.chat_bubble_outline_rounded, color: AppTheme.primaryBlue, size: 20),
+                    leading: const Icon(Icons.chat_bubble_outline_rounded, color: AppTheme.textPrimary, size: 20),
                     title: const Text(
                       'Messages',
                       style: TextStyle(
@@ -226,7 +226,7 @@ class AppDrawer extends ConsumerWidget {
                   // Discovered Peers Section
                   ListTile(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    leading: const Icon(Icons.radar_rounded, color: AppTheme.bleMeshBlue, size: 20),
+                    leading: const Icon(Icons.radar_rounded, color: AppTheme.textSecondary, size: 20),
                     title: const Text(
                       'Peers',
                       style: TextStyle(
@@ -247,7 +247,7 @@ class AppDrawer extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.bleMeshBlue,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                     ),
@@ -313,7 +313,7 @@ class AppDrawer extends ConsumerWidget {
                           width: 40,
                           height: 40,
                           decoration: const BoxDecoration(
-                            color: AppTheme.primaryBlue,
+                            color: AppTheme.primaryAccent,
                             borderRadius: AppTheme.squircleMedium,
                           ),
                           child: Center(
@@ -322,7 +322,7 @@ class AppDrawer extends ConsumerWidget {
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: Colors.white,
+                                color: AppTheme.onPrimaryAccent,
                               ),
                             ),
                           ),

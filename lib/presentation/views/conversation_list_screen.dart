@@ -57,8 +57,8 @@ class ConversationListScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
-              foregroundColor: Colors.white,
+              backgroundColor: AppTheme.primaryAccent,
+              foregroundColor: AppTheme.onPrimaryAccent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
@@ -251,11 +251,11 @@ class ConversationListScreen extends ConsumerWidget {
                     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     child: Row(
                       children: [
-                        Icon(Icons.add, size: 14, color: AppTheme.bleMeshBlue),
+                        Icon(Icons.add, size: 14, color: AppTheme.textPrimary),
                         SizedBox(width: 2),
                         Text(
                           'Join',
-                          style: TextStyle(fontSize: 12, color: AppTheme.bleMeshBlue, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 12, color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -277,13 +277,13 @@ class ConversationListScreen extends ConsumerWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isLocation ? const Color(0xFF132B45) : AppTheme.darkCard,
+                  color: AppTheme.darkCard,
                   borderRadius: AppTheme.squircleMedium,
                   border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
                 ),
                 child: Icon(
                   isLocation ? Icons.place : Icons.tag,
-                  color: isLocation ? AppTheme.bleMeshBlue : AppTheme.textSecondary,
+                  color: isLocation ? AppTheme.textPrimary : AppTheme.textSecondary,
                   size: 20,
                 ),
               ),
@@ -358,7 +358,7 @@ class ConversationListScreen extends ConsumerWidget {
                     borderRadius: AppTheme.squircleMedium,
                     border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
                   ),
-                  child: const Icon(Icons.lock, size: 18, color: AppTheme.primaryBlue),
+                  child: const Icon(Icons.lock, size: 18, color: AppTheme.textSecondary),
                 ),
                 title: Row(
                   children: [

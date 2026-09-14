@@ -53,8 +53,9 @@ class SlashCommandPopup extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withValues(alpha: 0.18),
+                      color: AppTheme.accentSubtle,
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppTheme.darkBorderSubtle, width: 0.8),
                     ),
                     child: Text(
                       item.command,
@@ -62,7 +63,7 @@ class SlashCommandPopup extends StatelessWidget {
                         fontFamily: 'monospace',
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.bleMeshBlue,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                   ),
