@@ -10,6 +10,9 @@ class IdentityKeyPair {
   /// Local nickname for presence announcements.
   final String nickname;
 
+  /// Optional phone number for peer search and discovery (Phase 10). Null if not set.
+  final String? phoneNumber;
+
   /// Curve25519 static key pair for Noise key agreement.
   final SimpleKeyPair noiseKeyPair;
 
@@ -30,6 +33,7 @@ class IdentityKeyPair {
 
   IdentityKeyPair({
     required this.nickname,
+    this.phoneNumber,
     required this.noiseKeyPair,
     required this.noisePublicKey,
     required this.signingKeyPair,
@@ -42,6 +46,7 @@ class IdentityKeyPair {
   /// and SHA-256 fingerprint matching the BitChat specification.
   static Future<IdentityKeyPair> create({
     required String nickname,
+    String? phoneNumber,
     required SimpleKeyPair noiseKeyPair,
     required SimpleKeyPair signingKeyPair,
   }) async {
@@ -54,6 +59,7 @@ class IdentityKeyPair {
 
     return IdentityKeyPair(
       nickname: nickname,
+      phoneNumber: phoneNumber,
       noiseKeyPair: noiseKeyPair,
       noisePublicKey: noisePub,
       signingKeyPair: signingKeyPair,
@@ -64,7 +70,7 @@ class IdentityKeyPair {
   }
 
   /// Generates a brand new identity with secure random keys.
-  static Future<IdentityKeyPair> generate({required String nickname}) async {
+  static Future<IdentityKeyPair> generate({required String nickname, String? phoneNumber}) async {
     final x25519 = X25519();
     final ed25519 = Ed25519();
 
@@ -73,6 +79,7 @@ class IdentityKeyPair {
 
     return create(
       nickname: nickname,
+      phoneNumber: phoneNumber,
       noiseKeyPair: noiseKey,
       signingKeyPair: signingKey,
     );
@@ -85,6 +92,7 @@ class IdentityKeyPair {
     return {
       'version': 1,
       'nickname': nickname,
+      'phoneNumber': phoneNumber,
       'noisePrivateKey': noisePriv,
       'signingPrivateKey': signingPriv,
     };
@@ -93,6 +101,7 @@ class IdentityKeyPair {
   /// Reconstructs the exact same persistent IdentityKeyPair from stored private seeds.
   static Future<IdentityKeyPair> fromJson(Map<String, dynamic> json) async {
     final nickname = json['nickname'] as String? ?? 'anon_node';
+    final phoneNumber = json['phoneNumber'] as String?;
     final noisePriv = _parseBytes(json['noisePrivateKey']);
     final signingPriv = _parseBytes(json['signingPrivateKey']);
 
@@ -104,6 +113,7 @@ class IdentityKeyPair {
 
     return create(
       nickname: nickname,
+      phoneNumber: phoneNumber,
       noiseKeyPair: noiseKey,
       signingKeyPair: signingKey,
     );

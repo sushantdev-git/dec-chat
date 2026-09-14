@@ -12,6 +12,8 @@ class AnnouncementPayload {
   final List<Uint8List>? directNeighbors;
   final int? capabilities;
   final String? bridgeGeohash;
+  /// Optional phone number shared by the peer (Phase 10). Null if not set.
+  final String? phoneNumber;
 
   const AnnouncementPayload({
     required this.nickname,
@@ -20,6 +22,7 @@ class AnnouncementPayload {
     this.directNeighbors,
     this.capabilities,
     this.bridgeGeohash,
+    this.phoneNumber,
   });
 
   @override
@@ -31,7 +34,8 @@ class AnnouncementPayload {
         eq(other.noisePublicKey, noisePublicKey) &&
         eq(other.signingPublicKey, signingPublicKey) &&
         other.capabilities == capabilities &&
-        other.bridgeGeohash == bridgeGeohash;
+        other.bridgeGeohash == bridgeGeohash &&
+        other.phoneNumber == phoneNumber;
   }
 
   @override
@@ -41,6 +45,7 @@ class AnnouncementPayload {
         const ListEquality().hash(signingPublicKey),
         capabilities,
         bridgeGeohash,
+        phoneNumber,
       );
 }
 
@@ -53,6 +58,8 @@ class AnnouncementCodec {
   static const int tlvDirectNeighbors = 0x04;
   static const int tlvCapabilities = 0x05;
   static const int tlvBridgeGeohash = 0x06;
+  // Phase 10: optional phone number (opt-in, privacy-preserving)
+  static const int tlvPhoneNumber = 0x07;
 
   /// Encodes an [AnnouncementPayload] into binary TLV format.
   static Uint8List? encode(AnnouncementPayload announcement) {
@@ -108,6 +115,16 @@ class AnnouncementCodec {
       }
     }
 
+    // 7. Phone Number TLV (Optional, opt-in only — Phase 10)
+    if (announcement.phoneNumber != null && announcement.phoneNumber!.isNotEmpty) {
+      final phoneBytes = utf8.encode(announcement.phoneNumber!);
+      if (phoneBytes.length <= 255) {
+        writer.writeUint8(tlvPhoneNumber);
+        writer.writeUint8(phoneBytes.length);
+        writer.writeBytes(phoneBytes);
+      }
+    }
+
     return writer.toBytes();
   }
 
@@ -123,6 +140,7 @@ class AnnouncementCodec {
     List<Uint8List>? directNeighbors;
     int? capabilities;
     String? bridgeGeohash;
+    String? phoneNumber;
 
     try {
       while (!reader.isAtEnd) {
@@ -160,6 +178,9 @@ class AnnouncementCodec {
           case tlvBridgeGeohash:
             bridgeGeohash = utf8.decode(valBytes, allowMalformed: true);
             break;
+          case tlvPhoneNumber:
+            phoneNumber = utf8.decode(valBytes, allowMalformed: true);
+            break;
           default:
             // Unknown TLV tag: safely ignored for future forward-compatibility!
             break;
@@ -178,6 +199,7 @@ class AnnouncementCodec {
         directNeighbors: directNeighbors,
         capabilities: capabilities,
         bridgeGeohash: bridgeGeohash,
+        phoneNumber: phoneNumber,
       );
     } catch (_) {
       return null;

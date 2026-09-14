@@ -80,7 +80,7 @@ void main() {
       expect(mSuggestions.first.command, equals('/msg'));
 
       final pSuggestions = ChatCommand.getSuggestions('/p');
-      expect(pSuggestions.length, equals(2)); // /ping, /panic
+      expect(pSuggestions.length, equals(3)); // /ping, /panic, /phone
 
       final allSuggestions = ChatCommand.getSuggestions('/');
       expect(allSuggestions.length, equals(ChatCommand.availableSuggestions.length));

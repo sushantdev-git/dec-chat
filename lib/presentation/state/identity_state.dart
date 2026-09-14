@@ -8,12 +8,15 @@ class IdentityState {
   final IdentityKeyPair? keyPair;
   final String nickname;
   final String peerIdHex;
+  /// Optional phone number for peer discovery (Phase 10).
+  final String? phoneNumber;
   final bool isInitialized;
 
   const IdentityState({
     this.keyPair,
     required this.nickname,
     required this.peerIdHex,
+    this.phoneNumber,
     this.isInitialized = false,
   });
 
@@ -21,16 +24,21 @@ class IdentityState {
     IdentityKeyPair? keyPair,
     String? nickname,
     String? peerIdHex,
+    Object? phoneNumber = _sentinel,
     bool? isInitialized,
   }) {
     return IdentityState(
       keyPair: keyPair ?? this.keyPair,
       nickname: nickname ?? this.nickname,
       peerIdHex: peerIdHex ?? this.peerIdHex,
+      phoneNumber: phoneNumber == _sentinel ? this.phoneNumber : phoneNumber as String?,
       isInitialized: isInitialized ?? this.isInitialized,
     );
   }
 }
+
+// Sentinel for nullable copyWith
+const Object _sentinel = Object();
 
 /// StateNotifier managing local user identity and cryptographic keys.
 class IdentityNotifier extends StateNotifier<IdentityState> {
@@ -60,6 +68,7 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
           final finalPair = effectiveNickname != restored.nickname
               ? await IdentityKeyPair.create(
                   nickname: effectiveNickname,
+                  phoneNumber: restored.phoneNumber,
                   noiseKeyPair: restored.noiseKeyPair,
                   signingKeyPair: restored.signingKeyPair,
                 )
@@ -75,6 +84,7 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
             keyPair: finalPair,
             nickname: finalPair.nickname,
             peerIdHex: finalPair.peerIdHex,
+            phoneNumber: finalPair.phoneNumber,
             isInitialized: true,
           );
           return;
@@ -103,33 +113,55 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
       keyPair: pair,
       nickname: pair.nickname,
       peerIdHex: pair.peerIdHex,
+      phoneNumber: pair.phoneNumber,
       isInitialized: true,
     );
   }
 
-  /// Updates the local user's broadcast nickname and persists change.
-  void setNickname(String newNickname) {
-    final clean = newNickname.trim();
-    if (clean.isEmpty || clean == state.nickname) return;
+  /// Atomically updates nickname and/or phone number and persists to disk.
+  Future<void> updateProfile({String? nickname, String? phoneNumber}) async {
+    final cleanNick = (nickname != null && nickname.trim().isNotEmpty)
+        ? nickname.trim()
+        : state.nickname;
+    final cleanPhone = (phoneNumber ?? '').trim();
+    final effectivePhone = cleanPhone.isEmpty ? null : cleanPhone;
 
     if (state.keyPair != null) {
-      IdentityKeyPair.create(
-        nickname: clean,
+      final updatedPair = await IdentityKeyPair.create(
+        nickname: cleanNick,
+        phoneNumber: effectivePhone,
         noiseKeyPair: state.keyPair!.noiseKeyPair,
         signingKeyPair: state.keyPair!.signingKeyPair,
-      ).then((updatedPair) async {
-        if (!mounted) return;
-        state = state.copyWith(nickname: clean, keyPair: updatedPair);
-        if (storageService != null) {
-          try {
-            final json = await updatedPair.toJson();
-            await storageService!.saveIdentity(json);
-          } catch (_) {}
-        }
-      });
+      );
+      if (!mounted) return;
+      state = state.copyWith(
+        nickname: cleanNick,
+        phoneNumber: effectivePhone,
+        keyPair: updatedPair,
+      );
+      if (storageService != null) {
+        try {
+          final json = await updatedPair.toJson();
+          await storageService!.saveIdentity(json);
+        } catch (_) {}
+      }
     } else {
-      state = state.copyWith(nickname: clean);
+      state = state.copyWith(
+        nickname: cleanNick,
+        phoneNumber: effectivePhone,
+      );
     }
+  }
+
+  /// Updates the local user's broadcast nickname and persists change.
+  void setNickname(String newNickname) {
+    updateProfile(nickname: newNickname, phoneNumber: state.phoneNumber);
+  }
+
+  /// Updates the local user's broadcast phone number (opt-in) and persists change.
+  /// Pass null or empty string to clear the phone number.
+  void setPhoneNumber(String? newPhone) {
+    updateProfile(nickname: state.nickname, phoneNumber: newPhone);
   }
 
   /// Emergency panic wipe: zeroizes identity, purges disk storage, and generates fresh ephemeral keys.

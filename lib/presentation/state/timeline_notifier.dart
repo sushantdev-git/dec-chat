@@ -243,6 +243,20 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
         _addSystemMessage(currentChannel, buffer.toString().trimRight());
         break;
 
+      case ChatCommandType.nick:
+        // Profile commands are intercepted in ChatScreen._handleSend() before reaching here.
+        if (cmd.errorMessage != null) {
+          _addSystemMessage(currentChannel, cmd.errorMessage!);
+        }
+        break;
+
+      case ChatCommandType.phone:
+        // Profile commands are intercepted in ChatScreen._handleSend() before reaching here.
+        if (cmd.errorMessage != null) {
+          _addSystemMessage(currentChannel, cmd.errorMessage!);
+        }
+        break;
+
       case ChatCommandType.unknown:
         _addSystemMessage(currentChannel, cmd.errorMessage ?? 'Unknown command');
         break;

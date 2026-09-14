@@ -16,6 +16,11 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		A10000000000000000000012 /* BLEConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* BLEConstants.swift */; };
+		A10000000000000000000013 /* BLECentralController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* BLECentralController.swift */; };
+		A10000000000000000000014 /* BLEPeripheralController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* BLEPeripheralController.swift */; };
+		A10000000000000000000015 /* BLERadioCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* BLERadioCoordinator.swift */; };
+		A10000000000000000000016 /* BlePlatformChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* BlePlatformChannel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +64,11 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10000000000000000000002 /* BLEConstants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BLEConstants.swift; sourceTree = "<group>"; };
+		A10000000000000000000003 /* BLECentralController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BLECentralController.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* BLEPeripheralController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BLEPeripheralController.swift; sourceTree = "<group>"; };
+		A10000000000000000000005 /* BLERadioCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BLERadioCoordinator.swift; sourceTree = "<group>"; };
+		A10000000000000000000006 /* BlePlatformChannel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BlePlatformChannel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -124,8 +134,21 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				A10000000000000000000001 /* BLE */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000001 /* BLE */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000002 /* BLEConstants.swift */,
+				A10000000000000000000003 /* BLECentralController.swift */,
+				A10000000000000000000004 /* BLEPeripheralController.swift */,
+				A10000000000000000000005 /* BLERadioCoordinator.swift */,
+				A10000000000000000000006 /* BlePlatformChannel.swift */,
+			);
+			path = BLE;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -284,6 +307,11 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				A10000000000000000000012 /* BLEConstants.swift in Sources */,
+				A10000000000000000000013 /* BLECentralController.swift in Sources */,
+				A10000000000000000000014 /* BLEPeripheralController.swift in Sources */,
+				A10000000000000000000015 /* BLERadioCoordinator.swift in Sources */,
+				A10000000000000000000016 /* BlePlatformChannel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

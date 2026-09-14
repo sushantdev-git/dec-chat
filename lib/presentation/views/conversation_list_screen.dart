@@ -9,6 +9,7 @@ import '../state/panic_controller.dart';
 import '../state/peers_notifier.dart';
 import '../state/timeline_notifier.dart';
 import '../theme/signal_theme.dart';
+import '../widgets/edit_profile_sheet.dart';
 import 'chat_screen.dart';
 import 'peer_directory_screen.dart';
 
@@ -134,35 +135,52 @@ class ConversationListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: SignalTheme.signalBlue,
-              child: Text(
-                identity.nickname.isNotEmpty ? identity.nickname[0].toUpperCase() : '?',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        title: GestureDetector(
+          onTap: () => EditProfileSheet.show(context),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: SignalTheme.signalBlue,
+                child: Text(
+                  identity.nickname.isNotEmpty ? identity.nickname[0].toUpperCase() : '?',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    identity.nickname,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '${identity.peerIdHex.substring(0, 8)} • BLE Mesh Online',
-                    style: const TextStyle(fontSize: 11, color: SignalTheme.bleMeshBlue),
-                  ),
-                ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          identity.nickname,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.edit, size: 12, color: SignalTheme.textMuted),
+                      ],
+                    ),
+                    Text(
+                      '${identity.peerIdHex.substring(0, 8)} • BLE Mesh Online',
+                      style: const TextStyle(fontSize: 11, color: SignalTheme.bleMeshBlue),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: SignalTheme.textPrimary),
+            tooltip: 'Search peers',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PeerDirectoryScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.emergency_outlined, color: SignalTheme.panicRed),
             tooltip: 'Emergency Panic Wipe',
