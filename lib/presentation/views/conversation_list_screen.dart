@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/bitchat_coordinator.dart';
 import '../../core/utils/geohash.dart';
 import '../state/channels_notifier.dart';
 import '../state/identity_state.dart';
@@ -118,6 +119,9 @@ class ConversationListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Eagerly initialize and activate the BitChat coordinator (radios + relays)
+    ref.watch(bitchatCoordinatorProvider);
+
     final identity = ref.watch(identityProvider);
     final channelsState = ref.watch(channelsProvider);
     final peersState = ref.watch(peersProvider);

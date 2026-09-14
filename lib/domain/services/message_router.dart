@@ -145,28 +145,41 @@ class MessageRouter implements TransportPort {
   Future<void> sendBroadcast(Uint8List packetBytes) async {
     switch (policy) {
       case RoutingPolicy.bleOnly:
-        await bleTransport.sendBroadcast(packetBytes);
+        if (bleTransport.isAvailable) {
+          await bleTransport.sendBroadcast(packetBytes).catchError((_) {});
+        }
         break;
 
       case RoutingPolicy.nostrOnly:
-        await nostrTransport.sendBroadcast(packetBytes);
+        if (nostrTransport.isAvailable) {
+          await nostrTransport.sendBroadcast(packetBytes).catchError((_) {});
+        }
         break;
 
       case RoutingPolicy.dual:
-        await Future.wait([
-          bleTransport.sendBroadcast(packetBytes),
-          nostrTransport.sendBroadcast(packetBytes),
-        ]);
+        final futures = <Future<void>>[];
+        if (bleTransport.isAvailable) {
+          futures.add(bleTransport.sendBroadcast(packetBytes).catchError((_) {}));
+        }
+        if (nostrTransport.isAvailable) {
+          futures.add(nostrTransport.sendBroadcast(packetBytes).catchError((_) {}));
+        }
+        if (futures.isNotEmpty) {
+          await Future.wait(futures);
+        }
         break;
 
       case RoutingPolicy.adaptive:
-        // Always transmit over local BLE mesh
-        final futures = <Future<void>>[bleTransport.sendBroadcast(packetBytes)];
-        // If Nostr is online, also transmit over Nostr mesh fallback
-        if (nostrTransport.isAvailable) {
-          futures.add(nostrTransport.sendBroadcast(packetBytes));
+        final futures = <Future<void>>[];
+        if (bleTransport.isAvailable) {
+          futures.add(bleTransport.sendBroadcast(packetBytes).catchError((_) {}));
         }
-        await Future.wait(futures);
+        if (nostrTransport.isAvailable) {
+          futures.add(nostrTransport.sendBroadcast(packetBytes).catchError((_) {}));
+        }
+        if (futures.isNotEmpty) {
+          await Future.wait(futures);
+        }
         break;
     }
   }
@@ -175,30 +188,39 @@ class MessageRouter implements TransportPort {
   Future<void> sendDirected(String targetPeerId, Uint8List packetBytes) async {
     switch (policy) {
       case RoutingPolicy.bleOnly:
-        await bleTransport.sendDirected(targetPeerId, packetBytes);
+        if (bleTransport.isAvailable) {
+          await bleTransport.sendDirected(targetPeerId, packetBytes).catchError((_) {});
+        }
         break;
 
       case RoutingPolicy.nostrOnly:
-        await nostrTransport.sendDirected(targetPeerId, packetBytes);
+        if (nostrTransport.isAvailable) {
+          await nostrTransport.sendDirected(targetPeerId, packetBytes).catchError((_) {});
+        }
         break;
 
       case RoutingPolicy.dual:
-        await Future.wait([
-          bleTransport.sendDirected(targetPeerId, packetBytes),
-          nostrTransport.sendDirected(targetPeerId, packetBytes),
-        ]);
+        final futures = <Future<void>>[];
+        if (bleTransport.isAvailable) {
+          futures.add(bleTransport.sendDirected(targetPeerId, packetBytes).catchError((_) {}));
+        }
+        if (nostrTransport.isAvailable) {
+          futures.add(nostrTransport.sendDirected(targetPeerId, packetBytes).catchError((_) {}));
+        }
+        if (futures.isNotEmpty) {
+          await Future.wait(futures);
+        }
         break;
 
       case RoutingPolicy.adaptive:
-        // If target peer is directly connected on BLE, prioritize low-latency local radio
         if (bleTransport.connectedPeerIds.contains(targetPeerId)) {
-          await bleTransport.sendDirected(targetPeerId, packetBytes);
+          if (bleTransport.isAvailable) {
+            await bleTransport.sendDirected(targetPeerId, packetBytes).catchError((_) {});
+          }
         } else if (nostrTransport.isAvailable) {
-          // Fallback to Nostr internet relay
-          await nostrTransport.sendDirected(targetPeerId, packetBytes);
-        } else {
-          // If Nostr is not available, try BLE broadcast/directed anyway
-          await bleTransport.sendDirected(targetPeerId, packetBytes);
+          await nostrTransport.sendDirected(targetPeerId, packetBytes).catchError((_) {});
+        } else if (bleTransport.isAvailable) {
+          await bleTransport.sendDirected(targetPeerId, packetBytes).catchError((_) {});
         }
         break;
     }
@@ -211,28 +233,37 @@ class MessageRouter implements TransportPort {
 
     switch (policy) {
       case RoutingPolicy.bleOnly:
-        await bleTransport.sendBroadcast(packetBytes);
+        if (bleTransport.isAvailable) {
+          await bleTransport.sendBroadcast(packetBytes).catchError((_) {});
+        }
         break;
 
       case RoutingPolicy.nostrOnly:
-        if (geohash != null) {
-          await nostrTransport.sendLocationBroadcast(geohash, packetBytes);
-        } else {
-          await nostrTransport.sendBroadcast(packetBytes);
+        if (nostrTransport.isAvailable) {
+          if (geohash != null) {
+            await nostrTransport.sendLocationBroadcast(geohash, packetBytes).catchError((_) {});
+          } else {
+            await nostrTransport.sendBroadcast(packetBytes).catchError((_) {});
+          }
         }
         break;
 
       case RoutingPolicy.dual:
       case RoutingPolicy.adaptive:
-        final futures = <Future<void>>[bleTransport.sendBroadcast(packetBytes)];
+        final futures = <Future<void>>[];
+        if (bleTransport.isAvailable) {
+          futures.add(bleTransport.sendBroadcast(packetBytes).catchError((_) {}));
+        }
         if (nostrTransport.isAvailable) {
           if (geohash != null) {
-            futures.add(nostrTransport.sendLocationBroadcast(geohash, packetBytes));
+            futures.add(nostrTransport.sendLocationBroadcast(geohash, packetBytes).catchError((_) {}));
           } else {
-            futures.add(nostrTransport.sendBroadcast(packetBytes));
+            futures.add(nostrTransport.sendBroadcast(packetBytes).catchError((_) {}));
           }
         }
-        await Future.wait(futures);
+        if (futures.isNotEmpty) {
+          await Future.wait(futures);
+        }
         break;
     }
   }

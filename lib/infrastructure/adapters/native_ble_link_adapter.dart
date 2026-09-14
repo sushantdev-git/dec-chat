@@ -59,9 +59,13 @@ class NativeBleLinkAdapter implements TransportPort, PowerPolicyPort {
         {'mode': mode.name},
       );
       _isAvailable = success ?? true;
+    } on MissingPluginException {
+      _isAvailable = false;
     } on PlatformException catch (e) {
       _isAvailable = false;
       throw StateError('Failed to initialize native BLE link: ${e.message}');
+    } catch (_) {
+      _isAvailable = false;
     }
   }
 

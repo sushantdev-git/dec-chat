@@ -1,18 +1,26 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/entities/identity_key_pair.dart';
+import '../domain/enums/message_type.dart';
 import '../domain/ports/transport_port.dart';
+import '../domain/services/announcement_module.dart';
+import '../domain/services/chat_message_module.dart';
 import '../domain/services/courier_module.dart';
 import '../domain/services/courier_service.dart';
 import '../domain/services/feature_registry.dart';
 import '../domain/services/mesh_engine.dart';
+import '../domain/services/message_router.dart';
 import '../domain/services/noise_session_manager.dart';
 import '../domain/services/panic_zeroization_service.dart';
 import '../domain/services/seen_packet_cache.dart';
 import '../infrastructure/adapters/native_ble_link_adapter.dart';
+import '../infrastructure/adapters/nostr_relay_adapter.dart';
+import '../infrastructure/codecs/announcement_codec.dart';
 import '../presentation/state/identity_state.dart';
+import '../presentation/state/peers_notifier.dart';
+import '../presentation/state/timeline_notifier.dart';
 
 /// Master coordinator tying together the full DecChat stack:
 /// - Cryptographic identity & Noise sessions
@@ -26,12 +34,16 @@ class BitchatCoordinator {
   final ProtocolFeatureRegistry featureRegistry;
   final SeenPacketCache seenCache;
   final IdentityKeyPair? keyPair;
+  final PeerAnnouncementHandler? onAnnouncementReceived;
+  final InboundMessageHandler? onMessageReceived;
+
   late final MeshEngine meshEngine;
   late final CourierService courierService;
   late final NoiseSessionManager? noiseSessionManager;
   late final PanicZeroizationService panicZeroizationService;
 
   bool _isStarted = false;
+  Timer? _announcementTimer;
 
   BitchatCoordinator({
     required this.localPeerId,
@@ -39,6 +51,8 @@ class BitchatCoordinator {
     ProtocolFeatureRegistry? featureRegistry,
     SeenPacketCache? seenCache,
     this.keyPair,
+    this.onAnnouncementReceived,
+    this.onMessageReceived,
   })  : featureRegistry = featureRegistry ?? ProtocolFeatureRegistry(),
         seenCache = seenCache ?? SeenPacketCache() {
     courierService = CourierService(
@@ -66,20 +80,55 @@ class BitchatCoordinator {
 
     // Register Courier DTN module into feature registry
     this.featureRegistry.registerModule(CourierModule(courierService));
+
+    if (onAnnouncementReceived != null) {
+      this.featureRegistry.registerModule(AnnouncementModule(onAnnouncementReceived!));
+    }
+    if (onMessageReceived != null) {
+      this.featureRegistry.registerModule(ChatMessageModule(onMessageReceived!));
+    }
   }
 
   bool get isStarted => _isStarted;
+
+  /// Broadcasts our peer presence announcement to the mesh and Nostr transports.
+  Future<void> broadcastPresence() async {
+    if (keyPair == null || !_isStarted) return;
+
+    final payload = AnnouncementPayload(
+      nickname: keyPair!.nickname,
+      noisePublicKey: keyPair!.noisePublicKeyBytes,
+      signingPublicKey: keyPair!.signingPublicKeyBytes,
+    );
+
+    final wireBytes = AnnouncementCodec.encode(payload);
+    if (wireBytes != null) {
+      try {
+        await meshEngine.sendBroadcastPacket(
+          type: MessageType.announce,
+          payload: wireBytes,
+        );
+      } catch (_) {}
+    }
+  }
 
   /// Starts the mesh engine, transport ports, and periodic background tasks.
   Future<void> start() async {
     if (_isStarted) return;
     _isStarted = true;
     await meshEngine.start();
+    await broadcastPresence();
+
+    _announcementTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      broadcastPresence();
+    });
   }
 
   /// Stops all radio links, mesh routines, and subscriptions.
   Future<void> stop() async {
     _isStarted = false;
+    _announcementTimer?.cancel();
+    _announcementTimer = null;
     await meshEngine.stop();
     await courierService.dispose();
   }
@@ -91,9 +140,41 @@ class BitchatCoordinator {
   }
 }
 
-/// Global provider for the transport port (defaults to NativeBleLinkAdapter).
+/// Global provider for the transport port (defaults to NostrRelayAdapter on Web, MessageRouter on native).
 final transportPortProvider = Provider<TransportPort>((ref) {
-  return NativeBleLinkAdapter();
+  final identity = ref.watch(identityProvider);
+  final signingPubHex = identity.keyPair != null
+      ? identity.keyPair!.signingPublicKeyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join()
+      : identity.peerIdHex.padRight(64, '0');
+
+  final nostr = NostrRelayAdapter(
+    relayUrls: const [
+      'wss://relay.primal.net',
+      'wss://offchain.pub',
+      'wss://nos.lol',
+    ],
+    localPubkeyHex: signingPubHex,
+  );
+
+  if (kIsWeb) {
+    ref.onDispose(() {
+      nostr.stop();
+    });
+    return nostr;
+  }
+
+  final ble = NativeBleLinkAdapter();
+  final router = MessageRouter(
+    bleTransport: ble,
+    nostrTransport: nostr,
+    policy: RoutingPolicy.dual,
+  );
+
+  ref.onDispose(() {
+    router.stop();
+  });
+
+  return router;
 });
 
 /// Global provider for the BitchatCoordinator.
@@ -108,7 +189,33 @@ final bitchatCoordinatorProvider = Provider<BitchatCoordinator?>((ref) {
     localPeerId: identity.keyPair!.peerId,
     transportPort: transport,
     keyPair: identity.keyPair,
+    onAnnouncementReceived: (announcement, senderPeerId, context) {
+      final senderHex = senderPeerId.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+      final safetyNumber = identity.keyPair?.computeSafetyNumber(announcement.noisePublicKey);
+      ref.read(peersProvider.notifier).updatePresence(
+        peerId: senderHex,
+        nickname: announcement.nickname,
+        noisePublicKey: announcement.noisePublicKey.map((b) => b.toRadixString(16).padLeft(2, '0')).join(),
+        signingPublicKey: announcement.signingPublicKey.map((b) => b.toRadixString(16).padLeft(2, '0')).join(),
+        hops: context.hops,
+        medium: context.medium,
+        safetyNumber: safetyNumber,
+      );
+    },
+    onMessageReceived: (packet, context) {
+      ref.read(timelineProvider.notifier).handleInboundPacket(
+        packet,
+        TransportPacketEvent(
+          packetBytes: Uint8List(0),
+          sourcePeerId: context.sourceLinkPeerId,
+          medium: context.medium,
+        ),
+      );
+    },
   );
+
+  coordinator.start();
+
   ref.onDispose(() {
     coordinator.stop();
   });
