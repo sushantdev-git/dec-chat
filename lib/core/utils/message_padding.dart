@@ -21,6 +21,12 @@ class MessagePadding {
     return padded;
   }
 
+  /// Convenience method that pads data to its optimal bucket size.
+  static Uint8List padToBucket(Uint8List data) {
+    final target = optimalBlockSize(data.length);
+    return pad(data, target);
+  }
+
   /// Removes PKCS#7-style padding from data if valid.
   /// If padding is invalid or absent, returns the original data unchanged.
   static Uint8List unpad(Uint8List data) {
