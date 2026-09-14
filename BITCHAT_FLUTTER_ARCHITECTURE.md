@@ -1,6 +1,6 @@
 # BitChat Mobile: Architecture Blueprint & Technical Specification (Flutter)
 
-**Document Version:** 1.0.0  
+**Document Version:** 1.1.0 (Extensibility & Modular Hardening)  
 **Author:** Principal Distributed Systems & Mobile Security Architect  
 **Target Platform:** Flutter (iOS & Android)  
 **Reference Protocol:** [permissionlesstech/bitchat](https://github.com/permissionlesstech/bitchat) (Protocol v2.0 / BLE Architecture v3)  
@@ -18,13 +18,114 @@ Its architecture rests upon five foundational tenets:
 4. **Controlled Flooding & Opportunistic Store-and-Forward:** Multi-hop mesh routing employs degree-dependent TTL clamping, LRU deduplication, fanout subsetting, randomized jitter, and opportunistic couriers (spray-and-wait).
 5. **Ephemerality by Default & Panic Wipe:** Chat timelines reside purely in volatile memory. All persisted artifacts (outbox mail, identity keys) are cryptographically sealed or wiped instantly upon a panic trigger.
 
-This document specifies the complete architectural design, engineering trade-offs, and implementation blueprint for building a **production-grade Flutter client** faithful to the BitChat specification and binary protocol.
+---
+
+## 2. Zero-Overhaul Extensibility Architecture
+
+A primary architectural failure mode in peer-to-peer networking is creating tight coupling between the mesh radio, packet routing, and application features (which led upstream BitChat v2 to stall in an 8,000-line god-object).
+
+To ensure that **any future protocol extension (e.g. voice streaming, group messaging, bulletin boards, Cashu ecash payments, or alternate transports like LoRa and LAN Wi-Fi Direct) can be dropped in without refactoring core routing or presentation**, this architecture enforces 7 modularity principles:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       FLUTTER PRESENTATION (Signal UI)                      │
+│   Unified Conversation View  ·  Peer Directory  ·  Safety Numbers & Badges  │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+┌──────────────────────────────────────▼──────────────────────────────────────┐
+│                    APPLICATION & STATE LAYER (Riverpod)                     │
+│     AsyncNotifiers  ·  State Providers  ·  PanicWipeCoordinator             │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+┌──────────────────────────────────────▼──────────────────────────────────────┐
+│                     DOMAIN CORE: MODULAR PLUGIN ENGINE                      │
+│                                                                             │
+│   ┌──────────────────────────────────────────────────────────────────────┐  │
+│   │                 ProtocolFeatureRegistry (Open-Closed)                │  │
+│   │  [PublicChatModule] [NoiseModule] [CourierModule] [FileTransfer]     │  │
+│   │  [VoiceModule]      [GroupModule] [BoardModule]   [FutureModules...] │  │
+│   └──────────────────────────────────▲───────────────────────────────────┘  │
+│                                      │ Dispatches Inbound Payload           │
+│   ┌──────────────────────────────────┴───────────────────────────────────┐  │
+│   │                   MeshEngine (Pure Infrastructure)                   │  │
+│   │  - Tolerant Decoder (Relays Unknown Packet Types Safely)             │  │
+│   │  - Controlled Flooding (TTL Clamping 7->5, Deduplication LRU 1000)   │  │
+│   │  - Randomized Jitter Scheduler (10-220ms) · Fanout Subsetting        │  │
+│   │  - Split-Horizon Link Rule · Outbox State Machine                    │  │
+│   └──────────────────────────────────▲───────────────────────────────────┘  │
+│                                      │                                      │
+│   ┌──────────────────────────────────┴───────────────────────────────────┐  │
+│   │            MultiTransportRouter (Prioritized Arbitration)            │  │
+│   │    BLE Mesh (Offline) ──▶ Local LAN (Wi-Fi) ──▶ Nostr Relay (Web)    │  │
+│   └──────────────────────────────────▲───────────────────────────────────┘  │
+└──────────────────────────────────────┼──────────────────────────────────────┘
+                                       │
+┌──────────────────────────────────────▼──────────────────────────────────────┐
+│                            PORTS & ADAPTERS LAYER                           │
+│  TransportPort   CryptoPort   ConversationRepoPort   PowerPolicyPort        │
+└─────────┬──────────────┬───────────────┬─────────────────────┬──────────────┘
+          │              │               │                     │
+          ▼              ▼               ▼                     ▼
+   [Native BLE]     [Dart Crypto]  [Volatile RAM /        [Adaptive Duty]
+   [Nostr WS]       (X25519/Ed)    Encrypted Cache]       (100% vs 25% sleep)
+   [Future: LoRa]
+```
+
+### 2.1 The Protocol Feature Registry (Open-Closed Principle)
+The `MeshEngine` is **pure networking infrastructure**. It knows how to encode headers, decrement TTL, deduplicate packets, and relay bytes over links. It has **zero knowledge** of private chat, files, or audio.
+
+Whenever a packet is addressed to our local peer (or is a public broadcast), `MeshEngine` passes it to `ProtocolFeatureRegistry`:
+
+```dart
+abstract class ProtocolFeatureModule {
+  String get moduleId;
+  Set<MessageType> get handledMessageTypes;
+  Future<void> initialize();
+  Future<void> handleInbound(BitchatPacket packet, InboundContext context);
+  Future<void> dispose();
+}
+```
+
+*Adding a new feature later (e.g. push-to-talk voice, bulletin board, or Cashu ecash tokens) requires creating a single class implementing `ProtocolFeatureModule` and registering it at startup. **Zero edits to the mesh engine or routing logic.***
+
+### 2.2 Tolerant Reader & Unknown Packet Relaying
+If a nearby peer is running BitChat v2.5 with a new packet type (`0x30`), older nodes must **not crash, drop, or invalidate** the packet:
+- `MessageType.unknown(int rawValue)` safely captures unallocated types.
+- Relays inspect only the outer 14/16-byte binary header.
+- The packet is deduplicated, TTL-decremented, jittered, and relayed across the mesh to its destination.
+- TLV parsers ignore unknown tags gracefully without parse exceptions.
+
+### 2.3 Pluggable Multi-Transport Pipeline
+Instead of hardcoding binary `isBle` vs `isNostr` flags, the routing layer interacts with a unified `TransportPort`:
+
+```dart
+enum TransportMedium { bleMesh, localLan, nostrRelay, lora, custom }
+
+abstract class TransportPort {
+  TransportMedium get medium;
+  Stream<TransportEvent> get events;
+  Future<void> sendPacket(BitchatPacket packet, {String? targetPeerAddress});
+  bool get isAvailable;
+  int get priorityOrder; // 0 = Direct BLE, 1 = Local LAN, 2 = Nostr Internet
+}
+```
+If we choose to add local Wi-Fi Direct, Multicast LAN UDP, or LoRa radio support in the future, we simply create a new adapter implementing `TransportPort` and register it in the router.
+
+### 2.4 Configurable Storage & Ephemerality Strategy
+- **Default Policy:** `VolatileMemoryConversationRepository` — Zero disk footprint. All message history lives in RAM ring buffers and vanishes on app kill or panic wipe.
+- **Optional Policy:** `EncryptedDiskConversationRepository` — AES-GCM encrypted local store (key in Secure Enclave), allowing users who prefer message retention across restarts to opt-in, while maintaining instant cryptographic zeroization on panic.
+
+### 2.5 Adaptive Power & Duty-Cycle Policies
+BLE scanning causes rapid battery depletion if run at 100% duty cycle. The system includes an explicit `PowerPolicyCoordinator`:
+- **Active Mode (App in foreground):** 100% scan, continuous advertising.
+- **Balanced Mode (App idle in foreground):** Scan 15s, idle 15s.
+- **Background Mode (App in background):** CoreBluetooth state restoration / Android background scan interval (scan 5s, idle 55s).
 
 ---
 
-## 2. BitChat Protocol Specifications (Under the Hood)
+## 3. BitChat Protocol Wire Specifications (Under the Hood)
 
-### 2.1 Wire Format & Binary Protocol
+### 3.1 Wire Format & Binary Protocol
 
 BitChat rejects heavy serialization formats (JSON, Protobuf) on the BLE mesh in favor of an optimized, big-endian binary packet format designed for constrained MTU limits (≤ 512 bytes):
 
@@ -84,7 +185,7 @@ When an `0x11` (`noiseEncrypted`) payload is decrypted, its first byte reveals t
 * `0x20`: `privateFile`
 * `0x21`: `authenticatedPeerState`
 
-### 2.2 Identity & Cryptographic Primitives
+### 3.2 Identity & Cryptographic Primitives
 
 Each client generates two primary asymmetric key pairs:
 1. **Curve25519 Key Pair:** Used for Noise Protocol Diffie-Hellman key exchange.
@@ -93,7 +194,7 @@ Each client generates two primary asymmetric key pairs:
 * **Peer ID:** The first 8 bytes of `SHA-256(Curve25519_Static_Public_Key)`. This 8-byte identifier is used in all mesh packet headers.
 * **Signing Envelope:** Signatures are computed over the packet representation with `TTL = 0`, stripping the mutable TTL byte so relays can decrement TTL in transit without breaking the cryptographic signature.
 
-### 2.3 Mesh Routing & Controlled Flooding Algorithm
+### 3.3 Mesh Routing & Controlled Flooding Algorithm
 
 To prevent broadcast storms while ensuring delivery across lossy radio links:
 1. **TTL Clamping:** Packets originate with `TTL = 7`. Relays adaptively clamp TTL:
@@ -105,93 +206,12 @@ To prevent broadcast storms while ensuring delivery across lossy radio links:
 5. **Split-Horizon Rule:** A packet is never relayed back out through the link on which it arrived.
 6. **Directed Routing:** Packets with a target `recipientID` follow recorded source routes (derived from 1-hop neighbor lists in recent `announce` packets). If no route exists, they fall back to flooding with full fanout.
 
-### 2.4 Nostr Dual-Transport Fallback
-
-When two peers are mutual favorites or direct messaging out of radio range:
-* Transport seamlessly pivots to Nostr relays (`wss://...`).
-* The message is packaged inside a BitChat encrypted envelope and published as an ephemeral Nostr event.
-* Geographic channels leverage geohashes (e.g. `9q8yy` for San Francisco) as channel identifiers published to public relays.
-
 ---
 
-## 3. Flutter Architectural Challenge & Core Solution
-
-### 3.1 The Mobile Bluetooth Mesh Dilemma in Flutter
-
-In Flutter, standard BLE plugins (`flutter_blue_plus`, `reactive_ble`) **only support BLE Central mode** (scanning and connecting to devices). They cannot:
-1. Act as a **BLE Peripheral** (broadcasting GATT advertisements).
-2. Host a **GATT Server** with read/write characteristics.
-3. Handle incoming MTU negotiations or peripheral-side connection events.
-
-A peer-to-peer mesh node **must simultaneously act as both Central and Peripheral** on the same radio:
-* **As a Peripheral:** Advertise BitChat Service UUID (`F47B5E2D-4A9E-4C5A-9B3F-8E1D2C3A4B5C`), listen for connections from nearby nodes, receive incoming packet writes, and dispatch notifications.
-* **As a Central:** Scan for BitChat Service UUID advertisements, connect to discovered peers, discover characteristics, write packets, and subscribe to notifications.
-
-### 3.2 Architectural Solution: The Radio Link Port Pattern
-
-Following the clean separation of BitChat V3 (CoreBluetooth isolation), we decouple the system into:
-1. **A Thin Native Link Layer (`BLELinkLayer`):**
-   - iOS: Swift module importing `CoreBluetooth` (`CBCentralManager` + `CBPeripheralManager`).
-   - Android: Kotlin module importing `android.bluetooth` (`BluetoothLeScanner`, `BluetoothLeAdvertiser`, `BluetoothGattServer`, `BluetoothGatt`).
-   - Zero protocol knowledge: It deals strictly with raw bytes, link connection events, and MTU limits.
-2. **A Pure Dart Mesh Core:**
-   - 100% of the mesh algorithms (packet encoding, fragmentation, TTL, deduplication, routing, jitter, Noise crypto, Nostr, and state machines) are implemented in Dart.
-   - Communicates with native radios via a typed Platform Channel / FFI interface.
-3. **The Simulation Superpower (`SimulatedLinkLayer`):**
-   - Because the mesh engine is pure Dart and depends only on an abstract `LinkLayerPort`, we can construct headless virtual mesh simulations! We can spin up 20 virtual nodes in automated Dart integration tests, simulate multi-hop delivery, packet drops, and partitions—**completely independent of physical Bluetooth hardware.**
+## 4. Flutter System Architecture & Directory Structure
 
 ```
-+-----------------------------------------------------------------------------------+
-|                               FLUTTER PRESENTATION                                |
-|  Terminal/IRC Console, Peer Radar, Geohash Picker, QR Verification, Panic Trigger  |
-+-----------------------------------------------------------------------------------+
-                                         │
-                                         ▼
-+-----------------------------------------------------------------------------------+
-|                             APPLICATION & STATE LAYER                             |
-|  TimelineState, PeerRegistryState, ActiveChannelState, PanicWipeCoordinator       |
-+-----------------------------------------------------------------------------------+
-                                         │
-                                         ▼
-+-----------------------------------------------------------------------------------+
-|                                 DOMAIN MESH CORE                                  |
-|  +--------------------+  +----------------------+  +---------------------------+  |
-|  | MessageRouter      |  | MeshEngine (Flood)   |  | NoiseSessionManager       |  |
-|  | - Direct Mesh      |  | - TTL / Jitter       |  | - Noise_XX Handshake      |  |
-|  | - Nostr Fallback   |  | - Dedup LRU (1000)   |  | - ChaCha20-Poly1305       |  |
-|  | - Courier Outbox   |  | - Fanout Subsetting  |  | - Curve25519 / Ed25519    |  |
-|  +--------------------+  +----------------------+  +---------------------------+  |
-|  +--------------------+  +----------------------+  +---------------------------+  |
-|  | FragmentationBuffer|  | WireCodec (Binary)   |  | NostrRelayPool            |  |
-|  | - Slice (469 bytes)|  | - BitchatPacket v1/2 |  | - WebSocket Connections   |  |
-|  | - Reassembly       |  | - TLV Announcement   |  | - Geohash Channels        |  |
-|  +--------------------+  +----------------------+  +---------------------------+  |
-+-----------------------------------------------------------------------------------+
-                                         │
-                                         ▼
-+-----------------------------------------------------------------------------------+
-|                               PORTS & ADAPTERS LAYER                              |
-|   LinkLayerPort              CryptoPort             StoragePort       LocationPort|
-+-----------------------------------------------------------------------------------+
-         │                           │                     │                  │
-         ▼                           ▼                     ▼                  ▼
-+─────────────────+         +─────────────────+   +────────────────+   +────────────+
-|   NATIVE RADIO  |         | Dart Cryptography|  | Secure KeyRing |   | GPS Sensor |
-|  Method/Event   |         | (X25519/Ed25519/ |  | (Keychain /    |   | -> Geohash |
-|    Channels     |         | ChaChaPoly)      |  |  Keystore)     |   +────────────+
-+─────────────────+         +─────────────────+   +────────────────+
-   │           │
-   ▼           ▼
-[iOS Swift] [Android Kotlin]
-CoreBluetooth  BluetoothGatt
-```
-
----
-
-## 4. Target Directory Structure (Clean Architecture)
-
-```
-bitchat_flutter/
+dec_chat/
 ├── android/app/src/main/kotlin/com/bitchat/mesh/
 │   ├── ble/
 │   │   ├── BleAdvertiserManager.kt     # BLE Peripheral advertiser
@@ -209,7 +229,7 @@ bitchat_flutter/
 ├── lib/
 │   ├── app/
 │   │   ├── app.dart                    # App root & theme config
-│   │   └── routes.dart                 # Navigation & dialogs
+│   │   └── routes.dart                 # Signal-style navigation
 │   ├── core/
 │   │   ├── constants/
 │   │   │   ├── ble_constants.dart      # Service UUID, Characteristic UUID, MTU
@@ -223,59 +243,64 @@ bitchat_flutter/
 │   ├── domain/
 │   │   ├── entities/
 │   │   │   ├── bitchat_packet.dart     # Protocol wire packet
-│   │   │   ├── message.dart            # Domain chat message
+│   │   │   ├── conversation.dart       # Polymorphic conversation (1:1, Channel, Mesh)
+│   │   │   ├── message.dart            # Chat message entity
 │   │   │   ├── peer.dart               # Peer identity & state
-│   │   │   ├── channel.dart            # Mesh / Geohash / DM channels
 │   │   │   └── courier_envelope.dart   # Store-and-forward sealed payload
 │   │   ├── enums/
-│   │   │   ├── message_type.dart       # Announce, message, noise, fragment...
-│   │   │   └── noise_payload_type.dart # Private message, receipt, file...
+│   │   │   ├── message_type.dart       # Extensible wire types + unknown fallback
+│   │   │   ├── noise_payload_type.dart # Inner private types
+│   │   │   └── transport_medium.dart   # BLE, Nostr, LAN, LoRa
 │   │   ├── ports/
-│   │   │   ├── link_layer_port.dart    # BLE Radio interface (events & commands)
-│   │   │   ├── nostr_port.dart         # Nostr transport interface
+│   │   │   ├── transport_port.dart     # Unified transport abstraction
 │   │   │   ├── crypto_port.dart        # Noise & signature interface
-│   │   │   ├── secure_storage_port.dart# Identity persistence port
-│   │   │   └── location_port.dart      # Geolocation port
+│   │   │   ├── conversation_repo_port.dart # Storage interface (RAM or Encrypted Disk)
+│   │   │   └── power_policy_port.dart  # Adaptive duty-cycle interface
 │   │   └── services/
+│   │       ├── feature_registry.dart   # Pluggable feature modules
 │   │       ├── mesh_engine.dart        # Controlled flooding, dedup, jitter
 │   │       ├── fragmentation_engine.dart# Slicing & reassembly
 │   │       ├── noise_session_manager.dart# Noise XX handshake & cipher states
-│   │       ├── message_router.dart     # Transport selection (Mesh vs Nostr)
+│   │       ├── message_router.dart     # Multi-transport arbitration
 │   │       ├── courier_service.dart    # Spray-and-wait outbox
-│   │       └── irc_command_parser.dart # Parsing /msg, /who, /slap, /ping
+│   │       └── irc_command_parser.dart # Slash command parser
 │   ├── infrastructure/
 │   │   ├── adapters/
-│   │   │   ├── native_ble_link_adapter.dart # Calls platform channels
+│   │   │   ├── native_ble_link_adapter.dart # Platform channel bridge
 │   │   │   ├── simulated_link_adapter.dart  # In-memory virtual mesh test radio
 │   │   │   ├── nostr_relay_adapter.dart     # WebSocket Nostr client
 │   │   │   ├── cryptography_adapter.dart    # X25519, Ed25519, ChaChaPoly
-│   │   │   ├── secure_storage_adapter.dart  # flutter_secure_storage / Keychain
-│   │   │   └── geolocator_adapter.dart      # Geolocator plugin adapter
-│   │   └── codecs/
-│   │       ├── binary_protocol_codec.dart   # BitchatPacket <-> Uint8List
-│   │       ├── announcement_codec.dart      # TLV Announcement encode/decode
-│   │       └── fragment_codec.dart          # Fragment payload slicing
+│   │   │   ├── volatile_conversation_repo.dart # Ephemeral RAM repository
+│   │   │   └── geolocator_adapter.dart      # GPS to Geohash converter
+│   │   ├── codecs/
+│   │   │   ├── binary_protocol_codec.dart   # BitchatPacket <-> Uint8List
+│   │   │   ├── announcement_codec.dart      # TLV Announcement encode/decode
+│   │   │   └── fragment_codec.dart          # Fragment payload slicing
+│   │   └── modules/
+│   │       ├── public_chat_module.dart      # Handles MessageType.message
+│   │       ├── noise_chat_module.dart       # Handles MessageType.noiseEncrypted
+│   │       ├── courier_module.dart          # Handles MessageType.courierEnvelope
+│   │       └── diagnostics_module.dart      # Handles MessageType.ping/pong
 │   ├── presentation/
 │   │   ├── state/
-│   │   │   ├── chat_controller.dart         # Timeline & sending
-│   │   │   ├── peer_controller.dart         # Discovered peers & signal
-│   │   │   ├── channel_controller.dart      # Active channels & geohash
-│   │   │   └── panic_controller.dart        # Emergency wipe handler
+│   │   │   ├── conversation_providers.dart  # Riverpod conversation streams
+│   │   │   ├── peer_providers.dart          # Discovered peer list & radar
+│   │   │   └── panic_controller.dart        # Emergency wipe coordinator
 │   │   ├── theme/
-│   │   │   └── terminal_theme.dart          # Monospace, green/amber CRT look
-│   │   ├── views/
-│   │   │   ├── terminal_chat_view.dart      # Main IRC chat console
-│   │   │   ├── peer_radar_view.dart         # Discovered mesh nodes
-│   │   │   ├── geohash_channels_view.dart   # Location channel selector
-│   │   │   ├── identity_qr_view.dart        # Fingerprint & QR verification
-│   │   │   └── widgets/
-│   │   │       ├── command_input_bar.dart   # Terminal input with tab-completion
-│   │   │       ├── message_bubble.dart      # IRC style formatted row
-│   │   │       └── signal_badge.dart        # BLE RSSI / hop count indicator
+│   │   │   └── signal_theme.dart            # Clean, high-contrast Signal aesthetic
+│   │   └── views/
+│   │       ├── conversation_list_view.dart  # Signal-style thread list
+│   │       ├── chat_screen.dart             # Message bubbles, lock badges, input
+│   │       ├── peer_directory_screen.dart   # Nearby mesh peers, RSSI, safety numbers
+│   │       ├── qr_verification_sheet.dart   # In-person safety number scanning
+│   │       └── widgets/
+│   │           ├── message_bubble.dart      # Encrypted bubble with delivery checks
+│   │           ├── transport_badge.dart     # BLE Mesh vs Nostr indicator
+│   │           └── slash_command_popup.dart # Command suggestions for /msg, /ping
 │   └── main.dart
 └── test/
     ├── domain/
-    │   ├── binary_protocol_test.dart        # Binary packet serialization tests
+    │   ├── binary_protocol_test.dart        # Packet serialization & unknown type tests
     │   ├── noise_protocol_test.dart         # Handshake & cipher vector tests
     │   ├── fragmentation_test.dart          # Large file chunking & reassembly
     │   └── mesh_simulation_test.dart        # 10-node virtual mesh relay test!
@@ -284,191 +309,64 @@ bitchat_flutter/
 
 ---
 
-## 5. Detailed Component Specifications
+## 5. Signal UI Design Pattern Specification
 
-### 5.1 Native BLE Link Layer Interface (`LinkLayerPort`)
+The UI adopts **Signal's world-class privacy-first interaction design**, while exposing BitChat's decentralized capabilities:
 
-The port contract between pure Dart and native platform radios:
-
-```dart
-abstract class LinkLayerPort {
-  /// Stream of asynchronous events from the physical radio
-  Stream<LinkEvent> get events;
-
-  /// Start simultaneous GATT advertising & scanning
-  Future<void> startRadio({required String serviceUuid});
-
-  /// Stop radio operations
-  Future<void> stopRadio();
-
-  /// Send raw bytes to a specific physical peer link
-  Future<void> sendBytes({
-    required String peerAddress,
-    required Uint8List bytes,
-  });
-
-  /// Broadcast raw bytes to all connected direct links
-  Future<void> broadcastBytes({
-    required Uint8List bytes,
-    String? excludePeerAddress, // Split-horizon support
-  });
-
-  /// Active connection count
-  int get activeLinkCount;
-}
-
-sealed class LinkEvent {
-  const LinkEvent();
-}
-
-class PeerDiscoveredEvent extends LinkEvent {
-  final String peerAddress;
-  final int rssi;
-  final Uint8List? advertisementData;
-  PeerDiscoveredEvent(this.peerAddress, this.rssi, this.advertisementData);
-}
-
-class LinkConnectedEvent extends LinkEvent {
-  final String peerAddress;
-  final int negotiatedMtu;
-  LinkConnectedEvent(this.peerAddress, this.negotiatedMtu);
-}
-
-class LinkDisconnectedEvent extends LinkEvent {
-  final String peerAddress;
-  LinkDisconnectedEvent(this.peerAddress);
-}
-
-class BytesReceivedEvent extends LinkEvent {
-  final String peerAddress;
-  final Uint8List bytes;
-  BytesReceivedEvent(this.peerAddress, this.bytes);
-}
-```
-
-### 5.2 Cryptography & Noise XX State Machine
-
-* **Handshake Pattern:** `Noise_XX_25519_ChaChaPoly_SHA256`
-* **Pattern Structure:**
-  ```
-  -> e
-  <- e, ee, s, es
-  -> s, se
-  ```
-* **Dart Implementation:** Using `cryptography` package:
-  - Key Exchange: `X25519()`
-  - AEAD Cipher: `ChaCha20.poly1305Aead()`
-  - Hash & HKDF: `Sha256()`
-  - Signatures: `Ed25519()`
-* **CipherState Transition:** Once message 3 is exchanged, two symmetric `CipherState` instances are spawned (initiator $\to$ responder and responder $\to$ initiator), with incrementing 64-bit nonces.
-* **Message Padding:** To prevent traffic-analysis size leakage, cleartext inside `noiseEncrypted` packets is padded via PKCS#7 to the nearest bucket size: $\{256, 512, 1024, 2048\}$ bytes.
-
-### 5.3 Mesh Engine & Controlled Flooding
-
-* **Seen Cache (LRU):**
-  - Key: `SHA256(senderID + timestamp + type + payload_prefix)`.
-  - Max size: 1,000 entries; TTL: 300 seconds.
-  - Action on hit: Drop silently. If a relay timer is queued for this packet, cancel it immediately.
-* **Relay Scheduler:**
-  - Jitter: $T_{\text{delay}} = \text{random}(10\text{ ms}, 220\text{ ms})$.
-  - Ingress link exclusion: Never send to `excludePeerAddress`.
-  - Fanout: If degree $\ge 6$, select $K = \lceil \log_2(\text{degree}) \rceil$ neighbors using packet hash as random seed. Otherwise, full fanout.
-  - Decrement TTL: `packet.ttl = packet.ttl - 1`. If `packet.ttl <= 0`, drop packet.
-
-### 5.4 Fragmentation & Reassembly Engine
-
-* BLE characteristic MTU after ATT overhead is typically $512 - 3 = 509$ bytes. BitChat standard fragment payload size is $\approx 469$ bytes.
-* Packet larger than MTU is split:
-  - Header: Fragment ID (8 bytes), Fragment Index (2 bytes, big-endian), Total Fragments (2 bytes, big-endian).
-  - Body: Chunk of packet bytes.
-* The receiver keeps an in-memory reassembly buffer with an active limit of 128 assemblies and a 30-second sliding timeout.
-
-### 5.5 Ephemeral Timeline & Panic Wipe Subsystem
-
-* **Volatile Memory:** Public and private chat messages are stored in an in-memory ring buffer (e.g. max 500 messages per channel). No SQLite / Hive database is used for message history!
-* **Panic Wipe Execution:**
-  1. Overwrite identity key pairs in secure storage with zeros before deleting keys.
-  2. Clear all in-memory Noise sessions, symmetric keys, and caches.
-  3. Purge all pending courier envelopes and outbox files from disk.
-  4. Reset UI to fresh onboarding screen.
-  5. Trigger: Available via `/wipe` or `/panic` IRC command, or a customizable triple-tap / shake gesture.
-
-### 5.6 IRC-Style Command Interface
-
-The user interface follows a clean, hacker-friendly IRC console paradigm:
-* `/msg <nick|peerID> <text>`: Start an encrypted direct message session.
-* `/who`: List all online mesh and geohash peers with signal strengths.
-* `/join <#channel>`: Switch channel (e.g. `#mesh` or `#9q8yy`).
-* `/slap <nick>`: Fun IRC homage (`* Alice slaps Bob around a bit with a large trout *`).
-* `/ping <peerID>`: Send a directed mesh ping and measure round-trip latency.
-* `/clear`: Clear the active terminal buffer.
-* `/wipe` or `/panic`: Instant, unconfirmed emergency data wipe.
-* `/help`: Display available commands and syntax.
+1. **Conversation List (Home):**
+   - Clean list of active threads: Direct Chats, Location Channels (`#9q8yy`), and Global `#mesh`.
+   - Visual transport badges: Blue Bluetooth icon for direct BLE mesh, purple Globe icon for Nostr fallback.
+   - Safety Status: A verified checkmark next to peers who have completed in-person QR verification.
+2. **Chat Screen:**
+   - Message bubbles with delivery and read receipt status.
+   - Top app bar displays peer safety status ("Lock icon: End-to-End Encrypted").
+   - Disappearing messages timer icon if ephemerality mode is active.
+   - Input composer supports normal text, plus autocompleting BitChat slash commands (`/msg`, `/who`, `/slap`, `/ping`, `/clear`, `/panic`).
+3. **Peer Safety Numbers & QR Verification:**
+   - Tapping on a peer displays their 60-digit cryptographic Safety Number (derived from Ed25519 & Noise public keys) and a QR code.
+   - Scanning a peer's QR code in person marks them as "Cryptographically Verified".
+4. **Emergency Panic Wipe:**
+   - Discreet trigger (e.g. triple-tap on app header or `/panic` command) instantly executes zeroization without prompts.
 
 ---
 
-## 6. Implementation Roadmap
+## 6. Incremental Build-and-Test Delivery Checklist
 
-### Phase 1: Core Dart Foundation & Binary Wire Codec
-* [x] Reverse-engineer protocol specs & extract binary constants.
-* [ ] Implement `BinaryReader` and `BinaryWriter` (network byte order, big-endian).
-* [ ] Implement `BitchatPacket` data model with v1/v2 header support.
-* [ ] Implement TLV encoder/decoder for `AnnouncementPacket`.
-* [ ] Implement `FragmentCodec` and `CompressionUtil` (zlib).
-* [ ] Unit test packet encoding/decoding against test vectors.
-
-### Phase 2: Cryptographic Engine & Identity Subsystem
-* [ ] Implement Ed25519 identity generation, verification, and packet signing.
-* [ ] Implement Curve25519 (X25519) key agreement.
-* [ ] Implement Noise Protocol XX handshake engine (`Noise_XX_25519_ChaChaPoly_SHA256`).
-* [ ] Implement symmetric ChaCha20-Poly1305 encryption/decryption with PKCS#7 padding.
-* [ ] Unit test cryptographic handshakes and message exchange.
-
-### Phase 3: Mesh Engine & Headless Simulation
-* [ ] Implement `MeshEngine` with deduplication LRU cache and jitter scheduler.
-* [ ] Implement `FragmentationEngine` with timeout reassembly buffer.
-* [ ] Implement `SimulatedLinkLayer` (in-memory virtual radio).
-* [ ] Construct a multi-node simulation test (e.g. Node A $\to$ Node B $\to$ Node C) verifying multi-hop packet routing and loop suppression.
-
-### Phase 4: Native BLE Dual-Role Radio Layer
-* [ ] **iOS:** Implement `BLECentralController` & `BLEPeripheralController` in Swift.
-* [ ] **iOS:** Configure background BLE execution modes and state restoration.
-* [ ] **Android:** Implement `BleAdvertiserManager`, `BleGattServerManager`, `BleScannerManager`, and `BleGattClientManager` in Kotlin.
-* [ ] **Bridge:** Implement Flutter MethodChannel & EventChannel bindings for `LinkLayerPort`.
-* [ ] Physical device smoke test: Verify two mobile phones establish a BLE link and exchange raw packets.
-
-### Phase 5: Nostr Dual-Transport & Location Channels
-* [ ] Implement `NostrRelayAdapter` over WebSockets (`web_socket_channel`).
-* [ ] Implement Geohash location calculator (`geolocator` -> Geohash string).
-* [ ] Implement `MessageRouter` to arbitrate between BLE Mesh and Nostr fallback.
-* [ ] Implement BitChat encrypted envelope packing for Nostr events.
-
-### Phase 6: Flutter Presentation Layer (Terminal/IRC UI)
-* [ ] Implement Riverpod / BLoC state management (`TimelineState`, `PeerState`, `ChannelState`).
-* [ ] Implement retro Terminal/IRC UI theme (monospace typography, high-contrast matrix green or amber palette).
-* [ ] Implement terminal input bar with `/` command and `@peer` tab-completion.
-* [ ] Implement Peer Radar screen with RSSI bars and verification badges.
-* [ ] Implement Geohash location channel browser.
-
-### Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish
-* [ ] Implement spray-and-wait courier storage and delivery engine.
-* [ ] Implement out-of-band QR code identity verification flow.
-* [ ] Implement Emergency Panic Wipe (zeroization + memory flush + app reset).
-* [ ] End-to-end field testing in real-world offline environments.
-
----
-
-## 7. Key Engineering Risks & Mitigations
-
-| Risk | Impact | Architectural Mitigation |
-|---|---|---|
-| **iOS Background BLE Limits** | iOS throttles background scanning and terminates non-compliant peripherals. | Use CoreBluetooth State Restoration (`CBCentralManagerOptionRestoreIdentifierKey`); limit scanning frequency in background; leverage Nostr push notifications when backgrounded. |
-| **Android BLE Stack Fragmentation** | Many Android chipsets have subtle GATT server bugs, connection limit quirks, and MTU negotiation issues. | Strict connection limits (cap at 6 concurrent links); conservative initial MTU (23 bytes default, negotiate up to 512); dedicated Kotlin radio coordinator managing serial GATT operations. |
-| **Battery Drain from Active Scanning** | Continuous BLE radio usage rapidly depletes battery. | Adaptive duty cycling: scan actively for 4s during peer discovery, back off to 15–30s interval once connected; RSSI filtering to reject weak, distant noise. |
-| **Memory Exhaustion from Large Files** | Flooding large media packets can crash memory-constrained devices. | Cap fragment assembly to 128 concurrent items and 1 MB max size; reject oversized incoming files at protocol level; use streaming file chunking. |
-
----
-
-## 8. Summary
-
-By decoupling the physical radio through a clean **Link Layer Port** and building the **BitChat Mesh Engine in pure, testable Dart**, this architecture guarantees 100% protocol fidelity with the upstream iOS/macOS BitChat implementation while giving Flutter unmatched testability, cross-platform maintainability, and top-tier cryptographic privacy.
+- [ ] **Phase 1: Pure Dart Wire Protocol & Codecs**
+  - [ ] BinaryReader & BinaryWriter (network byte order, big-endian)
+  - [ ] MessageType with `unknown` fallback for future forward compatibility
+  - [ ] BitchatPacket with v1/v2 header, flags, and `toBinaryDataForSigning()`
+  - [ ] TLV AnnouncementCodec with resilient parser for unknown tags
+  - [ ] FragmentCodec (slicing & reassembly headers)
+  - [ ] Automated round-trip unit test suite
+- [ ] **Phase 2: Cryptographic Engine & Noise XX**
+  - [ ] Ed25519 signature generation and verification
+  - [ ] Curve25519 (X25519) key agreement
+  - [ ] Noise XX handshake state machine (`Noise_XX_25519_ChaChaPoly_SHA256`)
+  - [ ] ChaCha20-Poly1305 AEAD cipher with PKCS#7 bucket padding (256, 512, 1024, 2048)
+  - [ ] Automated cryptographic test vectors & session handshake tests
+- [ ] **Phase 3: Mesh Engine & 10-Node Headless Simulation**
+  - [ ] ProtocolFeatureRegistry and feature module interfaces
+  - [ ] MeshEngine (deduplication LRU 1000, TTL clamping 7->5, jitter scheduler, split horizon)
+  - [ ] Fragmentation reassembly buffer with 30s sliding timeout
+  - [ ] SimulatedLinkLayer (in-memory virtual radio)
+  - [ ] 10-node headless virtual mesh test (multi-hop propagation, loop suppression, packet drops)
+- [ ] **Phase 4: Native BLE Dual-Role Radio Layer**
+  - [ ] iOS Swift: Central Controller & Peripheral Controller (GATT Server + Advertiser)
+  - [ ] iOS: Background BLE state restoration configuration
+  - [ ] Android Kotlin: Advertiser, Scanner, GattServer, and GattClient
+  - [ ] Flutter MethodChannel / EventChannel bridge implementation
+  - [ ] Physical device smoke test
+- [ ] **Phase 5: Nostr Dual-Transport & Location Channels**
+  - [ ] WebSocket Nostr relay adapter
+  - [ ] Geohash location calculator
+  - [ ] Multi-transport arbitration router (Mesh BLE -> Nostr internet fallback)
+- [ ] **Phase 6: Riverpod State & Signal UI**
+  - [ ] Conversation, Peer, and Panic Riverpod AsyncNotifiers
+  - [ ] Signal-style theme and conversation thread list
+  - [ ] Chat screen with message bubbles, transport badges, and slash commands
+  - [ ] Peer directory and in-person QR safety number verification
+- [ ] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish**
+  - [ ] Spray-and-wait courier storage and delivery
+  - [ ] Panic Wipe zeroization pipeline
+  - [ ] Final real-world field verification

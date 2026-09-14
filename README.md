@@ -28,15 +28,13 @@
 Detailed architectural design and protocol reverse-engineering are documented in:
 👉 **[BITCHAT_FLUTTER_ARCHITECTURE.md](BITCHAT_FLUTTER_ARCHITECTURE.md)**
 
-### The Radio Link Port Pattern (Dual-Role Radio)
-In mobile peer-to-peer meshes, a phone must act simultaneously as:
-1. **GATT Central:** Scanning for nearby peers and connecting to their GATT services.
-2. **GATT Peripheral:** Advertising the BitChat service UUID (`F47B5E2D-4A9E-4C5A-9B3F-8E1D2C3A4B5C`) and hosting a GATT server to receive incoming writes.
-
-To solve this in Flutter:
-- A thin native layer (`BLELinkLayer`) in **Swift** (iOS CoreBluetooth) and **Kotlin** (Android Bluetooth) manages raw radio I/O.
-- The entire protocol engine (wire encoding, fragmentation, routing, deduplication, and Noise crypto) is written in **pure Dart**.
-- A **`SimulatedLinkLayer`** enables running automated 10-node headless mesh simulation tests without requiring physical radios or hardware.
+### Zero-Overhaul Extensibility & Plugin Architecture
+To prevent the architectural stalling seen in monolithic mesh clients, DecChat employs an **Open-Closed Plugin Pattern**:
+- **Pure Infrastructure Mesh Engine:** The core `MeshEngine` handles only low-level networking (flooding, deduplication LRU, TTL clamping, randomized jitter, and link relaying). It has **zero knowledge** of specific message types or features.
+- **Protocol Feature Registry:** High-level features (Public Chat, Noise E2EE, Couriers, Files, Voice, Groups, Bulletin Boards) are self-contained `ProtocolFeatureModule` plugins that register dynamically. New features are added without modifying the core mesh engine.
+- **Tolerant Wire Codec:** Unknown future packet types (`MessageType.unknown`) are forwarded across the mesh safely without crashing or dropping packets.
+- **Pluggable Multi-Transport Pipeline:** Abstract `TransportPort` allows seamlessly adding new transports (e.g. Local LAN Wi-Fi Direct, LoRa radios, WebRTC) alongside BLE Mesh and Nostr.
+- **Configurable Ephemerality:** Clean repository port supporting both default volatile in-memory storage (zero disk trace) and optional encrypted local persistence.
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -50,14 +48,23 @@ To solve this in Flutter:
 └──────────────────────────┬─────────────────────────────┘
                            │
 ┌──────────────────────────▼─────────────────────────────┐
-│                 DOMAIN CORE (Pure Dart)                │
-│    MessageRouter  ·  MeshEngine  ·  NoiseSession       │
-│    BinaryCodec    ·  Fragmentation  ·  CourierOutbox   │
+│          DOMAIN CORE: MODULAR PLUGIN ENGINE            │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ ProtocolFeatureRegistry (Chat, Noise, Couriers)  │  │
+│  └────────────────────────▲─────────────────────────┘  │
+│                           │ Dispatches Inbound Payload │
+│  ┌────────────────────────┴─────────────────────────┐  │
+│  │ MeshEngine (Flooding, Dedup, Jitter, TTL Clamp)  │  │
+│  └────────────────────────▲─────────────────────────┘  │
+│                           │                            │
+│  ┌────────────────────────┴─────────────────────────┐  │
+│  │ MultiTransportRouter (BLE Mesh -> LAN -> Nostr)  │  │
+│  └──────────────────────────────────────────────────┘  │
 └──────────────────────────┬─────────────────────────────┘
                            │
 ┌──────────────────────────▼─────────────────────────────┐
 │                 PORTS & ADAPTERS LAYER                 │
-│  LinkLayerPort   CryptoPort   StoragePort  NostrPort   │
+│  TransportPort   CryptoPort   StoragePort   PowerPort  │
 └────────────┬───────────────────────┬───────────────────┘
              │                       │
      ┌───────┴───────┐       ┌───────┴───────┐
