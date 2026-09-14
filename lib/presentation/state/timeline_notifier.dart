@@ -9,20 +9,21 @@ import '../../domain/enums/message_type.dart';
 import '../../domain/enums/transport_medium.dart';
 import '../../domain/ports/transport_port.dart';
 import '../../domain/services/message_router.dart';
+import '../../infrastructure/services/local_storage_service.dart';
 import '../models/chat_message.dart';
 import '../utils/chat_command.dart';
 import 'channels_notifier.dart';
 import 'identity_state.dart';
 import 'peers_notifier.dart';
 
-/// State holding in-memory ephemeral conversation timelines partitioned by channel or peer ID.
+/// State holding in-memory and persistent conversation timelines partitioned by channel or peer ID.
 class TimelineState {
   final Map<String, List<ChatMessage>> messagesByChannel;
 
   const TimelineState({this.messagesByChannel = const {}});
 
   List<ChatMessage> getMessages(String channelOrPeerId) {
-    return messagesByChannel[channelOrPeerId.toLowerCase()] ?? const [];
+    return messagesByChannel[TimelineNotifier.normalizeKey(channelOrPeerId)] ?? const [];
   }
 
   TimelineState copyWith({Map<String, List<ChatMessage>>? messagesByChannel}) {
@@ -36,14 +37,45 @@ class TimelineState {
 class TimelineNotifier extends StateNotifier<TimelineState> {
   final Ref ref;
   final MessageRouter? router;
+  final LocalStorageService? storageService;
   static const int maxMessagesPerChannel = 500;
 
-  TimelineNotifier(this.ref, {this.router, TimelineState? initial})
+  TimelineNotifier(this.ref, {this.router, this.storageService, TimelineState? initial})
       : super(initial ?? const TimelineState());
+
+  /// Normalizes channel or peer identifiers (e.g. '@peer_id' -> 'peer_id', lowercase).
+  static String normalizeKey(String channelOrPeerId) {
+    var key = channelOrPeerId.trim().toLowerCase();
+    if (key.startsWith('@')) {
+      key = key.substring(1);
+    }
+    return key;
+  }
+
+  /// Initializes by restoring saved conversations from persistent storage.
+  Future<void> initialize() async {
+    if (storageService == null) return;
+    try {
+      final loaded = await storageService!.loadTimeline();
+      if (loaded != null && loaded.isNotEmpty) {
+        if (mounted) {
+          state = state.copyWith(messagesByChannel: loaded);
+        }
+      }
+    } catch (_) {}
+  }
+
+  void _persistTimeline() {
+    if (storageService != null) {
+      try {
+        storageService!.saveTimeline(state.messagesByChannel);
+      } catch (_) {}
+    }
+  }
 
   /// Adds a message into the specified conversation timeline with LRU ring-buffer capping.
   void addMessage(ChatMessage message) {
-    final key = message.channelOrPeerId.toLowerCase();
+    final key = normalizeKey(message.channelOrPeerId);
     final existing = state.messagesByChannel[key] ?? [];
 
     final updated = List<ChatMessage>.from(existing)..add(message);
@@ -54,6 +86,7 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
     final newMap = Map<String, List<ChatMessage>>.from(state.messagesByChannel);
     newMap[key] = updated;
     state = state.copyWith(messagesByChannel: newMap);
+    _persistTimeline();
   }
 
   /// Sends a message or executes a slash command from the user input composer.
@@ -265,19 +298,28 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
 
   /// Clears messages for a single channel or peer conversation.
   void clearChannel(String channelOrPeerId) {
-    final key = channelOrPeerId.toLowerCase();
+    final key = normalizeKey(channelOrPeerId);
     final newMap = Map<String, List<ChatMessage>>.from(state.messagesByChannel);
     newMap.remove(key);
     state = state.copyWith(messagesByChannel: newMap);
+    _persistTimeline();
   }
 
-  /// Emergency panic wipe: zeroizes all message timelines across all channels.
+  /// Emergency panic wipe: zeroizes all message timelines across all channels and deletes disk cache.
   Future<void> clearAll() async {
     state = const TimelineState(messagesByChannel: {});
+    if (storageService != null) {
+      try {
+        await storageService!.deleteTimeline();
+      } catch (_) {}
+    }
   }
 }
 
 /// Global provider for the conversation timeline.
 final timelineProvider = StateNotifierProvider<TimelineNotifier, TimelineState>((ref) {
-  return TimelineNotifier(ref);
+  final storage = ref.watch(localStorageServiceProvider);
+  final notifier = TimelineNotifier(ref, storageService: storage);
+  notifier.initialize();
+  return notifier;
 });

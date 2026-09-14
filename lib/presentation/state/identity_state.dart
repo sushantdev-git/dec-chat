@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/identity_key_pair.dart';
 import '../../domain/services/panic_zeroization_service.dart';
+import '../../infrastructure/services/local_storage_service.dart';
 
 /// State holding local node identity, keys, and display nickname.
 class IdentityState {
@@ -33,7 +34,9 @@ class IdentityState {
 
 /// StateNotifier managing local user identity and cryptographic keys.
 class IdentityNotifier extends StateNotifier<IdentityState> {
-  IdentityNotifier([IdentityState? initial])
+  final LocalStorageService? storageService;
+
+  IdentityNotifier([IdentityState? initial, this.storageService])
       : super(initial ??
             const IdentityState(
               nickname: 'anon_node',
@@ -41,10 +44,60 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
               isInitialized: false,
             ));
 
-  /// Initializes with real cryptographic keys asynchronously.
+  /// Initializes with real cryptographic keys asynchronously, restoring from disk if available.
   Future<void> initialize({String? nickname}) async {
-    final effectiveNickname = nickname ?? state.nickname;
+    final defaultNickname = state.nickname;
+
+    // 1. Attempt to restore persistent identity from disk
+    if (storageService != null) {
+      try {
+        final saved = await storageService!.loadIdentity();
+        if (!mounted) return;
+        if (saved != null) {
+          final restored = await IdentityKeyPair.fromJson(saved);
+          if (!mounted) return;
+          final effectiveNickname = nickname ?? restored.nickname;
+          final finalPair = effectiveNickname != restored.nickname
+              ? await IdentityKeyPair.create(
+                  nickname: effectiveNickname,
+                  noiseKeyPair: restored.noiseKeyPair,
+                  signingKeyPair: restored.signingKeyPair,
+                )
+              : restored;
+
+          if (effectiveNickname != restored.nickname) {
+            final json = await finalPair.toJson();
+            await storageService!.saveIdentity(json);
+          }
+
+          if (!mounted) return;
+          state = IdentityState(
+            keyPair: finalPair,
+            nickname: finalPair.nickname,
+            peerIdHex: finalPair.peerIdHex,
+            isInitialized: true,
+          );
+          return;
+        }
+      } catch (_) {
+        // Fall back to generating a fresh identity if disk corrupted
+      }
+    }
+
+    if (!mounted) return;
+
+    // 2. No saved identity found, generate fresh and persist
+    final effectiveNickname = nickname ?? defaultNickname;
     final pair = await IdentityKeyPair.generate(nickname: effectiveNickname);
+    if (!mounted) return;
+
+    if (storageService != null) {
+      try {
+        final json = await pair.toJson();
+        await storageService!.saveIdentity(json);
+      } catch (_) {}
+    }
+
     if (!mounted) return;
     state = IdentityState(
       keyPair: pair,
@@ -54,18 +107,38 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
     );
   }
 
-  /// Updates the local user's broadcast nickname.
+  /// Updates the local user's broadcast nickname and persists change.
   void setNickname(String newNickname) {
     final clean = newNickname.trim();
-    if (clean.isNotEmpty) {
+    if (clean.isEmpty || clean == state.nickname) return;
+
+    if (state.keyPair != null) {
+      IdentityKeyPair.create(
+        nickname: clean,
+        noiseKeyPair: state.keyPair!.noiseKeyPair,
+        signingKeyPair: state.keyPair!.signingKeyPair,
+      ).then((updatedPair) async {
+        if (!mounted) return;
+        state = state.copyWith(nickname: clean, keyPair: updatedPair);
+        if (storageService != null) {
+          try {
+            final json = await updatedPair.toJson();
+            await storageService!.saveIdentity(json);
+          } catch (_) {}
+        }
+      });
+    } else {
       state = state.copyWith(nickname: clean);
     }
   }
 
-  /// Emergency panic wipe: zeroizes identity and generates a brand new ephemeral key pair.
+  /// Emergency panic wipe: zeroizes identity, purges disk storage, and generates fresh ephemeral keys.
   Future<void> panicWipe() async {
     if (state.keyPair != null) {
       PanicZeroizationService.scrubBytes(state.keyPair!.peerId);
+    }
+    if (storageService != null) {
+      await storageService!.wipeAll();
     }
     final freshKeyPair = await IdentityKeyPair.generate(
       nickname: 'anon_${DateTime.now().millisecondsSinceEpoch % 10000}',
@@ -82,7 +155,8 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
 
 /// Global provider for the local node identity.
 final identityProvider = StateNotifierProvider<IdentityNotifier, IdentityState>((ref) {
-  final notifier = IdentityNotifier();
+  final storage = ref.watch(localStorageServiceProvider);
+  final notifier = IdentityNotifier(null, storage);
   notifier.initialize();
   return notifier;
 });

@@ -78,6 +78,52 @@ class IdentityKeyPair {
     );
   }
 
+  /// Serializes private key seeds and metadata to JSON for persistent storage across app restarts.
+  Future<Map<String, dynamic>> toJson() async {
+    final noisePriv = await noiseKeyPair.extractPrivateKeyBytes();
+    final signingPriv = await signingKeyPair.extractPrivateKeyBytes();
+    return {
+      'version': 1,
+      'nickname': nickname,
+      'noisePrivateKey': noisePriv,
+      'signingPrivateKey': signingPriv,
+    };
+  }
+
+  /// Reconstructs the exact same persistent IdentityKeyPair from stored private seeds.
+  static Future<IdentityKeyPair> fromJson(Map<String, dynamic> json) async {
+    final nickname = json['nickname'] as String? ?? 'anon_node';
+    final noisePriv = _parseBytes(json['noisePrivateKey']);
+    final signingPriv = _parseBytes(json['signingPrivateKey']);
+
+    final x25519 = X25519();
+    final ed25519 = Ed25519();
+
+    final noiseKey = await x25519.newKeyPairFromSeed(noisePriv);
+    final signingKey = await ed25519.newKeyPairFromSeed(signingPriv);
+
+    return create(
+      nickname: nickname,
+      noiseKeyPair: noiseKey,
+      signingKeyPair: signingKey,
+    );
+  }
+
+  static List<int> _parseBytes(dynamic value) {
+    if (value is List) {
+      return value.cast<int>();
+    } else if (value is String) {
+      if (value.length % 2 == 0 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(value)) {
+        final bytes = <int>[];
+        for (int i = 0; i < value.length; i += 2) {
+          bytes.add(int.parse(value.substring(i, i + 2), radix: 16));
+        }
+        return bytes;
+      }
+    }
+    throw ArgumentError('Invalid byte representation: $value');
+  }
+
   /// Formats the fingerprint into Signal-style formatted safety numbers (e.g. groups of 5 digits).
   String get formattedSafetyNumber {
     final clean = fingerprint.toUpperCase();

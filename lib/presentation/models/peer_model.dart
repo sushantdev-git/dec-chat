@@ -29,6 +29,41 @@ class PeerModel {
     this.safetyNumber,
   });
 
+  /// Serializes peer info to Map for local disk persistence.
+  Map<String, dynamic> toJson() => {
+    'peerId': peerId,
+    'nickname': nickname,
+    'noisePublicKey': noisePublicKey,
+    'signingPublicKey': signingPublicKey,
+    'rssi': rssi,
+    'hops': hops,
+    'lastSeen': lastSeen.millisecondsSinceEpoch,
+    'isDirectNeighbor': isDirectNeighbor,
+    'isVerified': isVerified,
+    'medium': medium.name,
+    'safetyNumber': safetyNumber,
+  };
+
+  /// Restores peer info from persistent Map.
+  factory PeerModel.fromJson(Map<String, dynamic> json) {
+    return PeerModel(
+      peerId: json['peerId'] as String,
+      nickname: json['nickname'] as String? ?? 'peer',
+      noisePublicKey: json['noisePublicKey'] as String?,
+      signingPublicKey: json['signingPublicKey'] as String?,
+      rssi: json['rssi'] as int?,
+      hops: json['hops'] as int? ?? 0,
+      lastSeen: DateTime.fromMillisecondsSinceEpoch(json['lastSeen'] as int? ?? 0),
+      isDirectNeighbor: json['isDirectNeighbor'] as bool? ?? true,
+      isVerified: json['isVerified'] as bool? ?? false,
+      medium: TransportMedium.values.firstWhere(
+        (m) => m.name == json['medium'],
+        orElse: () => TransportMedium.bleMesh,
+      ),
+      safetyNumber: json['safetyNumber'] as String?,
+    );
+  }
+
   /// Formats the safety number into 12 blocks of 5 digits if available.
   String? get formattedSafetyNumber {
     if (safetyNumber == null) return null;
