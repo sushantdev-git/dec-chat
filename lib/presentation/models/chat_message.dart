@@ -60,6 +60,44 @@ class ChatMessage {
     );
   }
 
+  /// Serializes message to Map for local disk persistence.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'senderId': senderId,
+    'senderNickname': senderNickname,
+    'content': content,
+    'timestamp': timestamp.millisecondsSinceEpoch,
+    'isOutgoing': isOutgoing,
+    'isEncrypted': isEncrypted,
+    'medium': medium.name,
+    'channelOrPeerId': channelOrPeerId,
+    'isSystem': isSystem,
+    'deliveryStatus': deliveryStatus.name,
+  };
+
+  /// Restores message from persistent Map.
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      id: json['id'] as String,
+      senderId: json['senderId'] as String,
+      senderNickname: json['senderNickname'] as String? ?? 'anon',
+      content: json['content'] as String? ?? '',
+      timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int? ?? 0),
+      isOutgoing: json['isOutgoing'] as bool? ?? false,
+      isEncrypted: json['isEncrypted'] as bool? ?? false,
+      medium: TransportMedium.values.firstWhere(
+        (m) => m.name == json['medium'],
+        orElse: () => TransportMedium.bleMesh,
+      ),
+      channelOrPeerId: json['channelOrPeerId'] as String? ?? '#mesh',
+      isSystem: json['isSystem'] as bool? ?? false,
+      deliveryStatus: MessageDeliveryStatus.values.firstWhere(
+        (s) => s.name == json['deliveryStatus'],
+        orElse: () => MessageDeliveryStatus.sent,
+      ),
+    );
+  }
+
   ChatMessage copyWith({
     String? id,
     String? senderId,

@@ -54,6 +54,28 @@ void main() {
       final aliceEveSafetyNumber = alice.computeSafetyNumber(eve.noisePublicKeyBytes);
       expect(aliceSafetyNumber, isNot(equals(aliceEveSafetyNumber)));
     });
+
+    test('serializes and deserializes deterministically with matching peerId and keys', () async {
+      final initial = await IdentityKeyPair.generate(nickname: 'PersistentNode');
+      final json = await initial.toJson();
+
+      expect(json['version'], 1);
+      expect(json['nickname'], 'PersistentNode');
+      expect(json['noisePrivateKey'], isA<List<int>>());
+      expect((json['noisePrivateKey'] as List<int>).length, 32);
+      expect(json['signingPrivateKey'], isA<List<int>>());
+      expect((json['signingPrivateKey'] as List<int>).length, 32);
+
+      final restored = await IdentityKeyPair.fromJson(json);
+
+      expect(restored.nickname, initial.nickname);
+      expect(restored.peerId, orderedEquals(initial.peerId));
+      expect(restored.peerIdHex, initial.peerIdHex);
+      expect(restored.noisePublicKeyBytes, orderedEquals(initial.noisePublicKeyBytes));
+      expect(restored.signingPublicKeyBytes, orderedEquals(initial.signingPublicKeyBytes));
+      expect(restored.fingerprint, initial.fingerprint);
+      expect(restored.formattedSafetyNumber, initial.formattedSafetyNumber);
+    });
   });
 
   group('Canonical Packet Signing & Verification', () {
