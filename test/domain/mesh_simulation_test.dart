@@ -102,7 +102,7 @@ void main() {
         payload: Uint8List.fromList(utf8.encode('Hello World')),
       );
 
-      final context = const PacketContext(
+      const context = PacketContext(
         sourceLinkPeerId: 'peer_abc',
         medium: TransportMedium.simulated,
         hops: 2,
@@ -124,7 +124,7 @@ void main() {
         payload: Uint8List(0),
       );
 
-      final context = const PacketContext(
+      const context = PacketContext(
         sourceLinkPeerId: 'peer_xyz',
         medium: TransportMedium.simulated,
         hops: 1,
@@ -258,7 +258,7 @@ void main() {
       network.createLineTopology(nodeIds);
 
       // Node 1 originates a broadcast chat message
-      final testMessage = 'Hello 10-hop mesh!';
+      const testMessage = 'Hello 10-hop mesh!';
       await engines[0].sendBroadcastPacket(
         type: MessageType.message,
         payload: Uint8List.fromList(utf8.encode(testMessage)),

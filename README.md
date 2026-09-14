@@ -102,14 +102,32 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - `NoiseSessionManager` & `NoiseSession`: State management for peer E2EE sessions, in-flight handshake timeout management, automatic PKCS#7 message padding, and instant panic session wipe.
     - `NoisePayloadType`: Forward-compatible enumeration for inner decrypted 0x11 payloads (`privateMessage`, `readReceipt`, `groupInvite`, `verifyChallenge`, etc.).
     - **Verification:** 28/28 unit tests passing across protocol and crypto suites, 0 analyzer issues.
-  - [x] **Phase 3: Mesh Routing Engine & Multi-Node Simulation** *(Completed)*
+  - [x] **Phase 3: Mesh Routing Engine & Multi-Node Simulation** *(Completed & Merged)*
     - `SeenPacketCache`: High-performance 1,000-entry LRU cache with 5-minute TTL and immediate duplicate suppression.
     - `ProtocolFeatureRegistry` & `ProtocolFeatureModule`: Dynamic decoupled feature registration preserving the Open-Closed Principle (zero feature knowledge in core mesh).
     - `MeshEngine`: BitChat controlled flooding with adaptive TTL clamping ($7 \to 5$ when peer density $\ge 6$), randomized relay jitter ($10\text{--}220\text{ ms}$), split-horizon filtering, and degree-based fanout subsetting.
     - `TransportPort` & `TransportMedium`: Transport abstraction supporting BLE, Nostr, Wi-Fi LAN, and simulated virtual radio links.
     - `SimulatedMeshNetwork` & `SimulatedLinkAdapter`: Headless multi-node virtual radio environment with configurable propagation latency, packet loss, and topology builders (line, full mesh, ring).
     - **Verification:** 38/38 unit tests passing across all suites including 10-node linear chain and circular ring deduplication simulations; 0 analyzer issues.
-  - [ ] **Phase 4: Native BLE Dual-Role Radio Bridge** (Swift iOS CoreBluetooth + Kotlin Android BLE Advertiser/GattServer)
+  - [x] **Phase 4: Native BLE Dual-Role Radio Bridge** *(Completed)*
+    - `BleConstants`: BitChat Service UUID (`0xFDC7`), Characteristic UUID (`0x2A06`), target MTU 512, platform channel identifiers.
+    - `PowerPolicyPort` & `BlePowerMode`: Adaptive duty cycle modes: `active` (100% continuous), `balanced` (15s on / 15s off), and `background` (5s on / 55s off).
+    - `NativeBleLinkAdapter`: Concrete `TransportPort` bridging Dart mesh routing with native dual-role radio controllers via Flutter MethodChannel and EventChannel.
+    - **iOS CoreBluetooth Dual-Role (`ios/Runner/BLE/`):**
+      - `BLEPeripheralController`: `CBPeripheralManager` & GATT Server advertising BitChat service and hosting packet characteristic.
+      - `BLECentralController`: `CBCentralManager` & Scanner discovering BitChat peers, subscribing to notifications, and transmitting packets.
+      - `BLERadioCoordinator`: Dual-role coordinator managing both Central and Peripheral links with adaptive duty-cycling.
+      - `BlePlatformChannel`: Platform channel message and event stream handlers.
+      - Background modes: `bluetooth-central`, `bluetooth-peripheral`.
+    - **Android BLE Dual-Role (`android/app/src/main/kotlin/com/bitchat/mesh/dec_chat/ble/`):**
+      - `BleAdvertiserManager`: `BluetoothLeAdvertiser` with low-latency settings.
+      - `BleGattServerManager`: `BluetoothGattServer` handling incoming writes and client subscriptions.
+      - `BleScannerManager`: `BluetoothLeScanner` with service UUID scan filters.
+      - `BleGattClientManager`: Client connections, MTU 512 negotiation, notifications, and packet transmission.
+      - `BleRadioCoordinator`: Dual-role coordinator and duty-cycle scheduling.
+      - `BlePlatformChannel`: MethodChannel and EventChannel bridge.
+      - Permissions: `BLUETOOTH_SCAN`, `BLUETOOTH_ADVERTISE`, `BLUETOOTH_CONNECT`, `ACCESS_FINE_LOCATION`.
+    - **Verification:** 46/46 unit tests passing across all suites including platform channel bridge test suite; 0 analyzer issues.
   - [ ] **Phase 5: Nostr Dual-Transport & Location Channels** (WebSocket relays, Geohash chat rooms)
   - [ ] **Phase 6: Riverpod Application State & Signal UI** (Conversation threads, peer directory, message bubbles, IRC slash commands)
   - [ ] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish** (Spray-and-wait outbox, instant zeroization, QR safety verification)
@@ -120,7 +138,7 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/mesh-routing-engine`
+- **Active Feature Branch:** `feat/native-ble-bridge`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain
