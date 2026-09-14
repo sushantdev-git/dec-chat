@@ -7,6 +7,8 @@ enum ChatCommandType {
   join,
   clear,
   panic,
+  nick,
+  phone,
   help,
   unknown,
 }
@@ -79,6 +81,16 @@ class ChatCommand {
       command: '/panic',
       syntax: '/panic',
       description: 'Instantly zeroize keys and wipe all in-memory data',
+    ),
+    CommandSuggestion(
+      command: '/nick',
+      syntax: '/nick <name>',
+      description: 'Change your display nickname (2–20 chars)',
+    ),
+    CommandSuggestion(
+      command: '/phone',
+      syntax: '/phone <number>',
+      description: 'Set your phone number for peer discovery (/phone clear to remove)',
     ),
     CommandSuggestion(
       command: '/help',
@@ -189,6 +201,35 @@ class ChatCommand {
       case '/panic':
         return ChatCommand(
           type: ChatCommandType.panic,
+          rawInput: input,
+        );
+
+      case '/nick':
+        if (parts.length < 2) {
+          return ChatCommand(
+            type: ChatCommandType.nick,
+            rawInput: input,
+            errorMessage: 'Usage: /nick <name>',
+          );
+        }
+        return ChatCommand(
+          type: ChatCommandType.nick,
+          argument: parts.sublist(1).join(' '),
+          rawInput: input,
+        );
+
+      case '/phone':
+        if (parts.length < 2) {
+          return ChatCommand(
+            type: ChatCommandType.phone,
+            rawInput: input,
+            errorMessage: 'Usage: /phone <number>  or  /phone clear',
+          );
+        }
+        final phoneArg = parts.sublist(1).join(' ');
+        return ChatCommand(
+          type: ChatCommandType.phone,
+          argument: phoneArg.toLowerCase() == 'clear' ? '' : phoneArg,
           rawInput: input,
         );
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/geohash.dart';
+import '../state/identity_state.dart';
 import '../state/peers_notifier.dart';
 import '../state/timeline_notifier.dart';
 import '../theme/signal_theme.dart';
@@ -52,6 +53,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
+    // Intercept profile commands before they reach the timeline
+    if (ChatCommand.isCommand(text)) {
+      final cmd = ChatCommand.parse(text);
+
+      if (cmd.type == ChatCommandType.nick) {
+        if (cmd.errorMessage != null) {
+          _showSystemMessage(cmd.errorMessage!);
+        } else if (cmd.argument != null && cmd.argument!.isNotEmpty) {
+          ref.read(identityProvider.notifier).setNickname(cmd.argument!);
+          _showSystemMessage('Nickname changed to "${cmd.argument}"');
+        }
+        _textController.clear();
+        setState(() => _currentQuery = '');
+        return;
+      }
+
+      if (cmd.type == ChatCommandType.phone) {
+        if (cmd.errorMessage != null) {
+          _showSystemMessage(cmd.errorMessage!);
+        } else {
+          final phone = cmd.argument ?? '';
+          ref.read(identityProvider.notifier).setPhoneNumber(phone.isEmpty ? null : phone);
+          _showSystemMessage(
+            phone.isEmpty ? 'Phone number cleared.' : 'Phone number set to "$phone"',
+          );
+        }
+        _textController.clear();
+        setState(() => _currentQuery = '');
+        return;
+      }
+    }
+
     ref.read(timelineProvider.notifier).sendUserMessage(
           channelOrPeerId: widget.channelOrPeerId,
           text: text,
@@ -70,6 +103,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
       }
     });
+  }
+
+  void _showSystemMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: SignalTheme.signalBlueDark,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   void _selectSuggestion(CommandSuggestion suggestion) {

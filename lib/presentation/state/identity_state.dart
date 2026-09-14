@@ -8,12 +8,15 @@ class IdentityState {
   final IdentityKeyPair? keyPair;
   final String nickname;
   final String peerIdHex;
+  /// Optional phone number for peer discovery (Phase 10).
+  final String? phoneNumber;
   final bool isInitialized;
 
   const IdentityState({
     this.keyPair,
     required this.nickname,
     required this.peerIdHex,
+    this.phoneNumber,
     this.isInitialized = false,
   });
 
@@ -21,16 +24,21 @@ class IdentityState {
     IdentityKeyPair? keyPair,
     String? nickname,
     String? peerIdHex,
+    Object? phoneNumber = _sentinel,
     bool? isInitialized,
   }) {
     return IdentityState(
       keyPair: keyPair ?? this.keyPair,
       nickname: nickname ?? this.nickname,
       peerIdHex: peerIdHex ?? this.peerIdHex,
+      phoneNumber: phoneNumber == _sentinel ? this.phoneNumber : phoneNumber as String?,
       isInitialized: isInitialized ?? this.isInitialized,
     );
   }
 }
+
+// Sentinel for nullable copyWith
+const Object _sentinel = Object();
 
 /// StateNotifier managing local user identity and cryptographic keys.
 class IdentityNotifier extends StateNotifier<IdentityState> {
@@ -60,6 +68,7 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
           final finalPair = effectiveNickname != restored.nickname
               ? await IdentityKeyPair.create(
                   nickname: effectiveNickname,
+                  phoneNumber: restored.phoneNumber,
                   noiseKeyPair: restored.noiseKeyPair,
                   signingKeyPair: restored.signingKeyPair,
                 )
@@ -75,6 +84,7 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
             keyPair: finalPair,
             nickname: finalPair.nickname,
             peerIdHex: finalPair.peerIdHex,
+            phoneNumber: finalPair.phoneNumber,
             isInitialized: true,
           );
           return;
@@ -103,6 +113,7 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
       keyPair: pair,
       nickname: pair.nickname,
       peerIdHex: pair.peerIdHex,
+      phoneNumber: pair.phoneNumber,
       isInitialized: true,
     );
   }
@@ -115,6 +126,7 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
     if (state.keyPair != null) {
       IdentityKeyPair.create(
         nickname: clean,
+        phoneNumber: state.keyPair!.phoneNumber,
         noiseKeyPair: state.keyPair!.noiseKeyPair,
         signingKeyPair: state.keyPair!.signingKeyPair,
       ).then((updatedPair) async {
@@ -129,6 +141,34 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
       });
     } else {
       state = state.copyWith(nickname: clean);
+    }
+  }
+
+  /// Updates the local user's broadcast phone number (opt-in) and persists change.
+  /// Pass null or empty string to clear the phone number.
+  void setPhoneNumber(String? newPhone) {
+    final clean = (newPhone ?? '').trim();
+    final effectivePhone = clean.isEmpty ? null : clean;
+    if (effectivePhone == state.phoneNumber) return;
+
+    if (state.keyPair != null) {
+      IdentityKeyPair.create(
+        nickname: state.keyPair!.nickname,
+        phoneNumber: effectivePhone,
+        noiseKeyPair: state.keyPair!.noiseKeyPair,
+        signingKeyPair: state.keyPair!.signingKeyPair,
+      ).then((updatedPair) async {
+        if (!mounted) return;
+        state = state.copyWith(phoneNumber: effectivePhone, keyPair: updatedPair);
+        if (storageService != null) {
+          try {
+            final json = await updatedPair.toJson();
+            await storageService!.saveIdentity(json);
+          } catch (_) {}
+        }
+      });
+    } else {
+      state = state.copyWith(phoneNumber: effectivePhone);
     }
   }
 

@@ -5,6 +5,8 @@ import '../../domain/enums/transport_medium.dart';
 class PeerModel {
   final String peerId;
   final String nickname;
+  /// Optional phone number broadcast by the peer (Phase 10). Null if not set by peer.
+  final String? phoneNumber;
   final String? noisePublicKey;
   final String? signingPublicKey;
   final int? rssi;
@@ -18,6 +20,7 @@ class PeerModel {
   const PeerModel({
     required this.peerId,
     required this.nickname,
+    this.phoneNumber,
     this.noisePublicKey,
     this.signingPublicKey,
     this.rssi,
@@ -33,6 +36,7 @@ class PeerModel {
   Map<String, dynamic> toJson() => {
     'peerId': peerId,
     'nickname': nickname,
+    'phoneNumber': phoneNumber,
     'noisePublicKey': noisePublicKey,
     'signingPublicKey': signingPublicKey,
     'rssi': rssi,
@@ -49,6 +53,7 @@ class PeerModel {
     return PeerModel(
       peerId: json['peerId'] as String,
       nickname: json['nickname'] as String? ?? 'peer',
+      phoneNumber: json['phoneNumber'] as String?,
       noisePublicKey: json['noisePublicKey'] as String?,
       signingPublicKey: json['signingPublicKey'] as String?,
       rssi: json['rssi'] as int?,
@@ -74,6 +79,10 @@ class PeerModel {
   String get shortPeerId =>
       peerId.length > 8 ? peerId.substring(0, 8) : peerId;
 
+  /// Digits-only version of phone number for search matching (strips spaces, dashes, +).
+  String? get phoneDigits =>
+      phoneNumber?.replaceAll(RegExp(r'[^\d]'), '');
+
   /// User-friendly signal quality indicator.
   String get signalQuality {
     if (rssi == null) return 'Internet / Relay';
@@ -86,6 +95,7 @@ class PeerModel {
   PeerModel copyWith({
     String? peerId,
     String? nickname,
+    Object? phoneNumber = _peerSentinel,
     String? noisePublicKey,
     String? signingPublicKey,
     int? rssi,
@@ -99,6 +109,7 @@ class PeerModel {
     return PeerModel(
       peerId: peerId ?? this.peerId,
       nickname: nickname ?? this.nickname,
+      phoneNumber: phoneNumber == _peerSentinel ? this.phoneNumber : phoneNumber as String?,
       noisePublicKey: noisePublicKey ?? this.noisePublicKey,
       signingPublicKey: signingPublicKey ?? this.signingPublicKey,
       rssi: rssi ?? this.rssi,
@@ -119,3 +130,5 @@ class PeerModel {
   @override
   int get hashCode => peerId.hashCode;
 }
+
+const Object _peerSentinel = Object();

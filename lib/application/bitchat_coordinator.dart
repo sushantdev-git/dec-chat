@@ -99,6 +99,7 @@ class BitchatCoordinator {
       nickname: keyPair!.nickname,
       noisePublicKey: keyPair!.noisePublicKeyBytes,
       signingPublicKey: keyPair!.signingPublicKeyBytes,
+      phoneNumber: keyPair!.phoneNumber,
     );
 
     final wireBytes = AnnouncementCodec.encode(payload);
@@ -195,6 +196,7 @@ final bitchatCoordinatorProvider = Provider<BitchatCoordinator?>((ref) {
       ref.read(peersProvider.notifier).updatePresence(
         peerId: senderHex,
         nickname: announcement.nickname,
+        phoneNumber: announcement.phoneNumber,
         noisePublicKey: announcement.noisePublicKey.map((b) => b.toRadixString(16).padLeft(2, '0')).join(),
         signingPublicKey: announcement.signingPublicKey.map((b) => b.toRadixString(16).padLeft(2, '0')).join(),
         hops: context.hops,

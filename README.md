@@ -199,14 +199,26 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
     - **Field Verification:**
       - Tested on Samsung Galaxy S23: verified persistent peer ID (`c0e64ded`) across complete process terminations (`am force-stop`), retained conversation history under Direct Messages, and unified subsequent messages consecutively in the exact same thread.
     - **Verification:** 140/140 unit and integration tests passing across all suites (`test/infrastructure/local_storage_service_test.dart`, `test/presentation/persistent_identity_and_threads_test.dart`, `test/domain/crypto_engine_test.dart`); 0 analyzer issues.
-  
+
+- **Phase 10 — Editable Profile, Phone Number Discovery & Peer Search** *(feat/profile-phone-peer-search)*
+  - **Problem:** Users couldn't change their display name (`anon_node`), and there was no practical way to verify you're talking to the right person — cryptographic peer IDs are opaque hex strings nobody memorizes.
+  - **Discovery:** Phone numbers are a universal identifier everyone already knows for their contacts.
+  - **Solution:**
+    - **Broadcast phone number:** Added TLV tag `0x07` to `AnnouncementCodec` for optional phone number — old clients safely skip it (forward-compatible by design). Phone is opt-in and privacy-preserving (null if not set).
+    - **Edit Profile sheet:** Tap the avatar/name in the AppBar to open a modal sheet with Display Name + Phone Number fields, full validation, and live persistence to disk.
+    - **Formatted peer ID:** "Your Identity" card in `PeerDirectoryScreen` shows the full 16-char peer ID formatted as `C0E6 4DED E5F6 0718` with one-tap Copy button.
+    - **Live search:** Search bar in `PeerDirectoryScreen` filters discovered peers in real-time by name (substring), phone number (digit-normalized), or peer ID prefix.
+    - **Slash commands:** `/nick <name>` and `/phone <number>` (with `/phone clear` to remove) work from any chat composer.
+    - **Data flow:** `IdentityKeyPair` → `IdentityState` → broadcast in every `AnnouncementPayload` → `PeerModel` → persisted in `peers.json` → searchable in UI.
+    - **Verification:** 163/163 tests passing; 0 analyzer issues.
+
 ---
 
 ## 📦 Repository & Local Environment
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/persistent-identity-thread-unification`
+- **Active Feature Branch:** `feat/profile-phone-peer-search`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain
