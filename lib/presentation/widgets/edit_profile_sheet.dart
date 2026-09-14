@@ -64,7 +64,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     return null;
   }
 
-  void _save() {
+  void _save() async {
     final nicknameErr = _validateNickname(_nicknameCtrl.text);
     final phoneErr = _validatePhone(_phoneCtrl.text);
     setState(() {
@@ -74,18 +74,22 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     if (nicknameErr != null || phoneErr != null) return;
 
     final notifier = ref.read(identityProvider.notifier);
-    notifier.setNickname(_nicknameCtrl.text.trim());
     final phone = _phoneCtrl.text.trim();
-    notifier.setPhoneNumber(phone.isEmpty ? null : phone);
-
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile updated'),
-        backgroundColor: SignalTheme.signalBlueDark,
-        duration: Duration(seconds: 2),
-      ),
+    await notifier.updateProfile(
+      nickname: _nicknameCtrl.text.trim(),
+      phoneNumber: phone.isEmpty ? null : phone,
     );
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated'),
+          backgroundColor: SignalTheme.signalBlueDark,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override

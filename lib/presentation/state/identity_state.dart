@@ -118,58 +118,50 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
     );
   }
 
-  /// Updates the local user's broadcast nickname and persists change.
-  void setNickname(String newNickname) {
-    final clean = newNickname.trim();
-    if (clean.isEmpty || clean == state.nickname) return;
+  /// Atomically updates nickname and/or phone number and persists to disk.
+  Future<void> updateProfile({String? nickname, String? phoneNumber}) async {
+    final cleanNick = (nickname != null && nickname.trim().isNotEmpty)
+        ? nickname.trim()
+        : state.nickname;
+    final cleanPhone = (phoneNumber ?? '').trim();
+    final effectivePhone = cleanPhone.isEmpty ? null : cleanPhone;
 
     if (state.keyPair != null) {
-      IdentityKeyPair.create(
-        nickname: clean,
-        phoneNumber: state.keyPair!.phoneNumber,
+      final updatedPair = await IdentityKeyPair.create(
+        nickname: cleanNick,
+        phoneNumber: effectivePhone,
         noiseKeyPair: state.keyPair!.noiseKeyPair,
         signingKeyPair: state.keyPair!.signingKeyPair,
-      ).then((updatedPair) async {
-        if (!mounted) return;
-        state = state.copyWith(nickname: clean, keyPair: updatedPair);
-        if (storageService != null) {
-          try {
-            final json = await updatedPair.toJson();
-            await storageService!.saveIdentity(json);
-          } catch (_) {}
-        }
-      });
+      );
+      if (!mounted) return;
+      state = state.copyWith(
+        nickname: cleanNick,
+        phoneNumber: effectivePhone,
+        keyPair: updatedPair,
+      );
+      if (storageService != null) {
+        try {
+          final json = await updatedPair.toJson();
+          await storageService!.saveIdentity(json);
+        } catch (_) {}
+      }
     } else {
-      state = state.copyWith(nickname: clean);
+      state = state.copyWith(
+        nickname: cleanNick,
+        phoneNumber: effectivePhone,
+      );
     }
+  }
+
+  /// Updates the local user's broadcast nickname and persists change.
+  void setNickname(String newNickname) {
+    updateProfile(nickname: newNickname, phoneNumber: state.phoneNumber);
   }
 
   /// Updates the local user's broadcast phone number (opt-in) and persists change.
   /// Pass null or empty string to clear the phone number.
   void setPhoneNumber(String? newPhone) {
-    final clean = (newPhone ?? '').trim();
-    final effectivePhone = clean.isEmpty ? null : clean;
-    if (effectivePhone == state.phoneNumber) return;
-
-    if (state.keyPair != null) {
-      IdentityKeyPair.create(
-        nickname: state.keyPair!.nickname,
-        phoneNumber: effectivePhone,
-        noiseKeyPair: state.keyPair!.noiseKeyPair,
-        signingKeyPair: state.keyPair!.signingKeyPair,
-      ).then((updatedPair) async {
-        if (!mounted) return;
-        state = state.copyWith(phoneNumber: effectivePhone, keyPair: updatedPair);
-        if (storageService != null) {
-          try {
-            final json = await updatedPair.toJson();
-            await storageService!.saveIdentity(json);
-          } catch (_) {}
-        }
-      });
-    } else {
-      state = state.copyWith(phoneNumber: effectivePhone);
-    }
+    updateProfile(nickname: state.nickname, phoneNumber: newPhone);
   }
 
   /// Emergency panic wipe: zeroizes identity, purges disk storage, and generates fresh ephemeral keys.

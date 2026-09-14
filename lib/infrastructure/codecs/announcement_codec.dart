@@ -118,7 +118,7 @@ class AnnouncementCodec {
     // 7. Phone Number TLV (Optional, opt-in only — Phase 10)
     if (announcement.phoneNumber != null && announcement.phoneNumber!.isNotEmpty) {
       final phoneBytes = utf8.encode(announcement.phoneNumber!);
-      if (phoneBytes.length <= 20) {
+      if (phoneBytes.length <= 255) {
         writer.writeUint8(tlvPhoneNumber);
         writer.writeUint8(phoneBytes.length);
         writer.writeBytes(phoneBytes);

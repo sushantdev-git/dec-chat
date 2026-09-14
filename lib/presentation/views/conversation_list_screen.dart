@@ -174,6 +174,14 @@ class ConversationListScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.search, color: SignalTheme.textPrimary),
+            tooltip: 'Search peers',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PeerDirectoryScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.emergency_outlined, color: SignalTheme.panicRed),
             tooltip: 'Emergency Panic Wipe',
             onPressed: () => _showPanicConfirmDialog(context, ref),
