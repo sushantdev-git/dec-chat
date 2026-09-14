@@ -84,29 +84,37 @@ We adhere strictly to an **incremental, verifiable engineering pattern**:
 
 ### Delivery Phases
 
-- [x] **Phase 1: Pure Dart Wire Protocol & Codecs** *(Completed)*
-  - `BinaryReader` & `BinaryWriter`: Big-endian integer and byte slice read/write with bounds checking.
-  - `MessageType`: Wire packet enumeration matching BitChat v2.0 with forward-compatible `unknown(rawValue)` fallback.
-  - `MessagePadding`: PKCS#7 message padding toward `{256, 512, 1024, 2048}`-byte buckets.
-  - `BitchatPacket`: Immutable packet model (v1 14-byte & v2 16-byte headers, flag bitmasks, `copyForSigning()` invariant).
-  - `BinaryProtocolCodec`: Full wire serialization/deserialization engine with automatic zlib payload compression.
-  - `AnnouncementCodec`: TLV presence encoder/decoder with resilient unknown tag skipping.
-  - `FragmentCodec`: Large packet MTU slicing into 469-byte fragments and reassembly.
-  - **Verification:** 15/15 unit tests passing (`flutter test test/domain/binary_protocol_test.dart`), 0 analyzer issues.
-- [ ] **Phase 2: Cryptographic Engine & Identity** (Ed25519 signing, Curve25519 key agreement, Noise_XX handshake, ChaCha20-Poly1305)
-- [ ] **Phase 3: Mesh Engine & Headless Multi-Node Simulation** (Deduplication LRU, jitter scheduler, TTL clamping, SimulatedLinkLayer 10-node test)
-- [ ] **Phase 4: Native BLE Dual-Role Radio Bridge** (Swift iOS CoreBluetooth + Kotlin Android BLE Advertiser/GattServer)
-- [ ] **Phase 5: Nostr Dual-Transport & Location Channels** (WebSocket relays, Geohash chat rooms)
-- [ ] **Phase 6: Riverpod Application State & Signal UI** (Conversation threads, peer directory, message bubbles, IRC slash commands)
-- [ ] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish** (Spray-and-wait outbox, instant zeroization, QR safety verification)
-
+  - [x] **Phase 1: Pure Dart Wire Protocol & Codecs** *(Completed & Merged)*
+    - `BinaryReader` & `BinaryWriter`: Big-endian integer and byte slice read/write with bounds checking.
+    - `MessageType`: Wire packet enumeration matching BitChat v2.0 with forward-compatible `unknown(rawValue)` fallback.
+    - `MessagePadding`: PKCS#7 message padding toward `{256, 512, 1024, 2048}`-byte buckets.
+    - `BitchatPacket`: Immutable packet model (v1 14-byte & v2 16-byte headers, flag bitmasks, `copyForSigning()` invariant).
+    - `BinaryProtocolCodec`: Full wire serialization/deserialization engine with automatic zlib payload compression.
+    - `AnnouncementCodec`: TLV presence encoder/decoder with resilient unknown tag skipping.
+    - `FragmentCodec`: Large packet MTU slicing into 469-byte fragments and reassembly.
+    - **Verification:** 15/15 unit tests passing, 0 analyzer issues.
+  - [x] **Phase 2: Cryptographic Engine & Identity Subsystem** *(Completed)*
+    - `IdentityKeyPair`: Dual Curve25519 (X25519) + Ed25519 keys, persistent 8-byte peer ID (`SHA-256(noisePublicKey)[0..8]`), and symmetric Signal-style 60-digit safety numbers.
+    - `CryptoPort` & `CryptographyAdapter`: Abstract port & concrete adapter using `package:cryptography` for unforgeable canonical packet signing (`TTL=0`) and tamper-evident verification.
+    - `NoiseCipherState`: ChaCha20-Poly1305 AEAD with BitChat 12-byte nonce layout, extracted 4-byte big-endian wire nonces, and 1024-bit sliding-window replay protection.
+    - `NoiseSymmetricState`: Complete Noise Protocol framework SymmetricState abstraction (HKDF-SHA256, `mixHash`, `mixKey`, `mixKeyAndHash`, `encryptAndHash`, `decryptAndHash`, `split`).
+    - `NoiseHandshakeState`: 3-step `Noise_XX_25519_ChaChaPoly_SHA256` mutual authentication state machine (`-> e`, `<- e, ee, s, es`, `-> s, se`) with forward secrecy and static key encryption.
+    - `NoiseSessionManager` & `NoiseSession`: State management for peer E2EE sessions, in-flight handshake timeout management, automatic PKCS#7 message padding, and instant panic session wipe.
+    - `NoisePayloadType`: Forward-compatible enumeration for inner decrypted 0x11 payloads (`privateMessage`, `readReceipt`, `groupInvite`, `verifyChallenge`, etc.).
+    - **Verification:** 28/28 unit tests passing across protocol and crypto suites, 0 analyzer issues.
+  - [ ] **Phase 3: Mesh Engine & Headless Multi-Node Simulation** (Deduplication LRU, jitter scheduler, TTL clamping, SimulatedLinkLayer 10-node test)
+  - [ ] **Phase 4: Native BLE Dual-Role Radio Bridge** (Swift iOS CoreBluetooth + Kotlin Android BLE Advertiser/GattServer)
+  - [ ] **Phase 5: Nostr Dual-Transport & Location Channels** (WebSocket relays, Geohash chat rooms)
+  - [ ] **Phase 6: Riverpod Application State & Signal UI** (Conversation threads, peer directory, message bubbles, IRC slash commands)
+  - [ ] **Phase 7: Store-and-Forward Couriers, Panic Wipe & Field Polish** (Spray-and-wait outbox, instant zeroization, QR safety verification)
+  
 ---
 
 ## 📦 Repository & Local Environment
 
 - **Git Remote:** `https://github.com/sushantdev-git/dec-chat.git`
 - **Default Branch:** `main`
-- **Active Feature Branch:** `feat/wire-protocol-codec`
+- **Active Feature Branch:** `feat/crypto-identity-engine`
 - **Author:** Sushant Mishra (`sushantkumar6700@gmail.com`)
 
 ### Environment & Toolchain
