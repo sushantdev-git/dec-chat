@@ -183,7 +183,9 @@ class MeshEngine {
     }
 
     // 2. Local Delivery (Is this packet for us?)
-    final isForUs = packet.recipientId == null || _bytesEqual(packet.recipientId!, localPeerId);
+    final isForUs = packet.recipientId == null ||
+        _bytesEqual(packet.recipientId!, localPeerId) ||
+        packet.type == MessageType.courierEnvelope;
     if (isForUs) {
       final hops = max(0, initialTtl - packet.ttl);
       final context = PacketContext(
@@ -204,6 +206,11 @@ class MeshEngine {
     String packetId,
     String incomingLinkPeerId,
   ) {
+    // Courier envelopes are handled via DTN store-and-forward, not broadcast flooding
+    if (packet.type == MessageType.courierEnvelope) {
+      return;
+    }
+
     // Condition A: Packet originated from us -> do NOT relay
     if (_bytesEqual(packet.senderId, localPeerId)) {
       return;
