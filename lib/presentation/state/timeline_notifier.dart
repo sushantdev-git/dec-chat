@@ -52,13 +52,16 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
     return key;
   }
 
+  int _initEpoch = 0;
+
   /// Initializes by restoring saved conversations from persistent storage.
   Future<void> initialize() async {
     if (storageService == null) return;
+    final currentEpoch = ++_initEpoch;
     try {
       final loaded = await storageService!.loadTimeline();
       if (loaded != null && loaded.isNotEmpty) {
-        if (mounted) {
+        if (mounted && _initEpoch == currentEpoch) {
           state = state.copyWith(messagesByChannel: loaded);
         }
       }
@@ -321,6 +324,7 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
 
   /// Emergency panic wipe: zeroizes all message timelines across all channels and deletes disk cache.
   Future<void> clearAll() async {
+    _initEpoch++;
     state = const TimelineState(messagesByChannel: {});
     if (storageService != null) {
       try {
