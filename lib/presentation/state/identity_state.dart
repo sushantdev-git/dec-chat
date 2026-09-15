@@ -154,14 +154,14 @@ class IdentityNotifier extends StateNotifier<IdentityState> {
   }
 
   /// Updates the local user's broadcast nickname and persists change.
-  void setNickname(String newNickname) {
-    updateProfile(nickname: newNickname, phoneNumber: state.phoneNumber);
+  Future<void> setNickname(String newNickname) {
+    return updateProfile(nickname: newNickname, phoneNumber: state.phoneNumber);
   }
 
   /// Updates the local user's broadcast phone number (opt-in) and persists change.
   /// Pass null or empty string to clear the phone number.
-  void setPhoneNumber(String? newPhone) {
-    updateProfile(nickname: state.nickname, phoneNumber: newPhone);
+  Future<void> setPhoneNumber(String? newPhone) {
+    return updateProfile(nickname: state.nickname, phoneNumber: newPhone);
   }
 
   /// Emergency panic wipe: zeroizes identity, purges disk storage, and generates fresh ephemeral keys.

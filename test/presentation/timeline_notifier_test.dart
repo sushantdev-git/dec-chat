@@ -7,6 +7,7 @@ import 'package:grid/domain/entities/bitchat_packet.dart';
 import 'package:grid/domain/enums/message_type.dart';
 import 'package:grid/domain/enums/transport_medium.dart';
 import 'package:grid/domain/ports/transport_port.dart';
+import 'package:grid/infrastructure/services/local_storage_service.dart';
 import 'package:grid/presentation/state/channels_notifier.dart';
 import 'package:grid/presentation/state/identity_state.dart';
 import 'package:grid/presentation/state/peers_notifier.dart';
@@ -17,7 +18,11 @@ void main() {
     late ProviderContainer container;
 
     setUp(() {
-      container = ProviderContainer();
+      container = ProviderContainer(
+        overrides: [
+          localStorageServiceProvider.overrideWithValue(LocalStorageService(inMemoryOnly: true)),
+        ],
+      );
     });
 
     tearDown(() {

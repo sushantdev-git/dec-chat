@@ -57,6 +57,38 @@ void main() {
       expect(session2State.keyPair!.peerId, orderedEquals(session1State.keyPair!.peerId));
     });
 
+    test('IdentityNotifier restores user updated nickname and phone number across cold restarts', () async {
+      final notifier1 = IdentityNotifier(null, storageService);
+      await notifier1.initialize();
+      expect(notifier1.state.nickname, 'anon_node');
+      expect(notifier1.state.phoneNumber, isNull);
+
+      // User updates nickname and phone
+      await notifier1.updateProfile(nickname: 'Sushant', phoneNumber: '+1234567890');
+      expect(notifier1.state.nickname, 'Sushant');
+      expect(notifier1.state.phoneNumber, '+1234567890');
+      final firstPeerId = notifier1.state.peerIdHex;
+
+      // Simulate cold app restart: new notifier reading from disk
+      final notifier2 = IdentityNotifier(null, storageService);
+      await notifier2.initialize();
+      expect(notifier2.state.isInitialized, isTrue);
+      expect(notifier2.state.nickname, 'Sushant');
+      expect(notifier2.state.phoneNumber, '+1234567890');
+      expect(notifier2.state.peerIdHex, firstPeerId);
+
+      // User clears phone number
+      await notifier2.setPhoneNumber(null);
+      expect(notifier2.state.phoneNumber, isNull);
+
+      // Cold restart again
+      final notifier3 = IdentityNotifier(null, storageService);
+      await notifier3.initialize();
+      expect(notifier3.state.nickname, 'Sushant');
+      expect(notifier3.state.phoneNumber, isNull);
+      expect(notifier3.state.peerIdHex, firstPeerId);
+    });
+
     test('TimelineNotifier restores conversation history and unifies threads for the same peer', () async {
       final container = ProviderContainer(
         overrides: [
