@@ -58,9 +58,7 @@ class MeshEngine {
     if (_isRunning) return;
     _isRunning = true;
 
-    if (!transportPort.isAvailable) {
-      await transportPort.start();
-    }
+    await transportPort.start();
 
     _transportSubscription = transportPort.incomingPackets.listen(
       _handleInboundEvent,

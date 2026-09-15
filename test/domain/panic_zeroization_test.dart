@@ -7,6 +7,7 @@ import 'package:grid/domain/ports/transport_port.dart';
 import 'package:grid/domain/services/courier_service.dart';
 import 'package:grid/domain/services/noise_session_manager.dart';
 import 'package:grid/domain/services/panic_zeroization_service.dart';
+import 'package:grid/domain/services/seen_packet_cache.dart';
 
 class MockPanicTransport implements TransportPort {
   bool wasStopped = false;
@@ -25,6 +26,9 @@ class MockPanicTransport implements TransportPort {
 
   @override
   Future<void> start() async {}
+
+  @override
+  Future<void> startScan() async {}
 
   @override
   Future<void> stop() async {
@@ -70,10 +74,16 @@ void main() {
       // Start a handshake
       await noiseManager.initiateHandshake(remoteKeyPair.peerId);
 
+      final seenCache = SeenPacketCache();
+      seenCache.checkAndAdd('packet_hash_1');
+      seenCache.checkAndAdd('packet_hash_2');
+      expect(seenCache.size, equals(2));
+
       final service = PanicZeroizationService(
         transportPort: transport,
         courierService: courier,
         noiseSessionManager: noiseManager,
+        seenPacketCache: seenCache,
       );
 
       // Execute Panic Wipe
@@ -87,6 +97,9 @@ void main() {
 
       // 3. Local peer ID scrubbed to zero
       expect(localKeyPair.peerId.every((b) => b == 0), isTrue);
+
+      // 4. SeenPacketCache cleared of all packet deduplication hashes
+      expect(seenCache.size, equals(0));
 
       await courier.dispose();
     });

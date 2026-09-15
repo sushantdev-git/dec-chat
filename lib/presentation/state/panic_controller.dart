@@ -46,6 +46,13 @@ class PanicController {
 
     // 5. Zeroize and regenerate cryptographic keys
     await ref.read(identityProvider.notifier).panicWipe();
+
+    // 6. Ensure the new coordinator and radio links are cleanly started and ready for discovery
+    final newCoordinator = ref.read(bitchatCoordinatorProvider);
+    if (newCoordinator != null) {
+      await newCoordinator.start();
+      await newCoordinator.startScan();
+    }
   }
 }
 

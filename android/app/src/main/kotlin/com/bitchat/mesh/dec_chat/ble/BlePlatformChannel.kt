@@ -63,6 +63,10 @@ class BlePlatformChannel(
             "getConnectedPeers" -> {
                 result.success(coordinator.getConnectedPeers())
             }
+            "startScan" -> {
+                coordinator.restartScan()
+                result.success(true)
+            }
             else -> result.notImplemented()
         }
     }

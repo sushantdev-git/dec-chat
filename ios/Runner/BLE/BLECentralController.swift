@@ -25,13 +25,26 @@ class BLECentralController: NSObject, CBCentralManagerDelegate, CBPeripheralDele
         ])
     }
     
-    func startScanning() {
+    func startScanning(allowDuplicates: Bool = false) {
         guard centralManager.state == .poweredOn else { return }
         isScanning = true
         centralManager.scanForPeripherals(
             withServices: [BLEConstants.serviceUUID],
-            options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+            options: [CBCentralManagerScanOptionAllowDuplicatesKey: allowDuplicates]
         )
+    }
+    
+    func retrieveConnectedPeripherals() -> [CBPeripheral] {
+        guard centralManager.state == .poweredOn else { return [] }
+        let peripherals = centralManager.retrieveConnectedPeripherals(withServices: [BLEConstants.serviceUUID])
+        for peripheral in peripherals {
+            if connectedPeripherals[peripheral.identifier] == nil {
+                connectedPeripherals[peripheral.identifier] = peripheral
+                peripheral.delegate = self
+                centralManager.connect(peripheral, options: nil)
+            }
+        }
+        return peripherals
     }
     
     func stopScanning() {

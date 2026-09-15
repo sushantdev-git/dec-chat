@@ -69,6 +69,10 @@ class BlePlatformChannel: NSObject, FlutterStreamHandler, BLERadioCoordinatorDel
         case "getConnectedPeers":
             result(Array(radioCoordinator.connectedPeers))
             
+        case "startScan":
+            radioCoordinator.restartScan()
+            result(true)
+            
         default:
             result(FlutterMethodNotImplemented)
         }

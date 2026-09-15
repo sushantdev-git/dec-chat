@@ -49,6 +49,9 @@ abstract class TransportPort {
   /// Initializes and activates the radio link.
   Future<void> start();
 
+  /// Forces a fresh radio scan burst to discover nearby peers.
+  Future<void> startScan() async {}
+
   /// Gracefully tears down the radio link and releases resources.
   Future<void> stop();
 }

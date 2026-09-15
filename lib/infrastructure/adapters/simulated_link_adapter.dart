@@ -170,6 +170,11 @@ class SimulatedLinkAdapter implements TransportPort {
   }
 
   @override
+  Future<void> startScan() async {
+    _isAvailable = true;
+  }
+
+  @override
   Future<void> stop() async {
     _isAvailable = false;
   }

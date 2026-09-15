@@ -36,12 +36,17 @@ class _PeerDirectoryScreenState extends ConsumerState<PeerDirectoryScreen> {
     super.dispose();
   }
 
-  void _startScan() {
+  Future<void> _startScan() async {
     if (_isScanning) return;
     setState(() => _isScanning = true);
 
-    // Immediate presence announcement burst
-    ref.read(bitchatCoordinatorProvider)?.broadcastPresence();
+    final coordinator = ref.read(bitchatCoordinatorProvider);
+    if (coordinator != null) {
+      if (!coordinator.isStarted) {
+        await coordinator.start();
+      }
+      await coordinator.startScan();
+    }
 
     // Broadcast presence burst periodically every 1.5 seconds during scan
     _scanBurstTimer?.cancel();

@@ -1,6 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:grid/application/bitchat_coordinator.dart';
 import 'package:grid/domain/enums/transport_medium.dart';
 import 'package:grid/presentation/state/channels_notifier.dart';
+import 'package:grid/presentation/state/identity_state.dart';
+import 'package:grid/presentation/state/panic_controller.dart';
 import 'package:grid/presentation/state/peers_notifier.dart';
 
 void main() {
@@ -126,6 +130,37 @@ void main() {
 
       expect(notifier.state.joinedChannels, equals({'#mesh', '#general'}));
       expect(notifier.state.activeChannel, equals('#mesh'));
+    });
+  });
+
+  group('PanicController Lifecycle & Recovery', () {
+    test('executePanicWipe clears state and re-arms coordinator with startScan', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Initialize identity
+      await container.read(identityProvider.notifier).initialize();
+      final initialPeerId = container.read(identityProvider).peerIdHex;
+
+      // Add a peer
+      container.read(peersProvider.notifier).updatePresence(peerId: 'peer_abc', nickname: 'PeerABC');
+      expect(container.read(peersProvider).allPeers.length, equals(1));
+
+      // Execute wipe
+      await container.read(panicControllerProvider).executePanicWipe();
+
+      // Peers cleared
+      expect(container.read(peersProvider).allPeers.isEmpty, isTrue);
+
+      // Identity changed to fresh ephemeral key
+      final newPeerId = container.read(identityProvider).peerIdHex;
+      expect(newPeerId, isNot(equals(initialPeerId)));
+
+      // New coordinator is running and started
+      final coordinator = container.read(bitchatCoordinatorProvider);
+      expect(coordinator, isNotNull);
+      expect(coordinator!.isStarted, isTrue);
     });
   });
 }

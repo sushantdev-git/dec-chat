@@ -44,6 +44,17 @@ class BLERadioCoordinator: BLEPeripheralDelegate, BLECentralDelegate {
         applyDutyCycle()
     }
     
+    func restartScan() {
+        self.powerMode = .active
+        dutyCycleTimer?.invalidate()
+        dutyCycleTimer = nil
+        
+        peripheralController.startAdvertising()
+        _ = centralController.retrieveConnectedPeripherals()
+        centralController.stopScanning()
+        centralController.startScanning(allowDuplicates: true)
+    }
+    
     func stop() {
         dutyCycleTimer?.invalidate()
         dutyCycleTimer = nil

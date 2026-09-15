@@ -3,10 +3,12 @@ package com.bitchat.mesh.dec_chat.ble
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 
 interface BleRadioCoordinatorListener {
     fun onPacketReceived(data: ByteArray, peerId: String, rssi: Int?)
@@ -53,6 +55,27 @@ class BleRadioCoordinator(
         serverManager.startServer()
         advertiserManager.startAdvertising()
         applyDutyCycle()
+        listener.onAdapterStateChanged(bluetoothAdapter?.isEnabled == true)
+    }
+
+    fun restartScan() {
+        this.powerMode = PowerMode.ACTIVE
+        dutyCycleRunnable?.let { handler.removeCallbacks(it) }
+        dutyCycleRunnable = null
+
+        serverManager.startServer()
+        advertiserManager.startAdvertising()
+
+        try {
+            val connectedGattDevices = bluetoothManager?.getConnectedDevices(BluetoothProfile.GATT)
+            connectedGattDevices?.forEach { device ->
+                clientManager.connectDevice(device)
+            }
+        } catch (e: SecurityException) {
+            Log.e("BleRadioCoordinator", "Permission error checking connected GATT devices", e)
+        }
+
+        scannerManager.startScanning()
         listener.onAdapterStateChanged(bluetoothAdapter?.isEnabled == true)
     }
 
