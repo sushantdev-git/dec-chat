@@ -43,11 +43,33 @@ class NativeBleLinkAdapter implements TransportPort, PowerPolicyPort {
   @override
   bool get isAvailable => _isAvailable;
 
+  Future<void>? _activeOperation;
+
+  Future<T> _runExclusive<T>(Future<T> Function() operation) async {
+    final previous = _activeOperation;
+    final completer = Completer<void>();
+    _activeOperation = completer.future;
+    try {
+      if (previous != null) {
+        await previous.catchError((_) {});
+      }
+      return await operation();
+    } finally {
+      completer.complete();
+      if (_activeOperation == completer.future) {
+        _activeOperation = null;
+      }
+    }
+  }
+
   @override
   BlePowerMode get currentMode => _powerMode;
 
   @override
-  Future<void> start({BlePowerMode mode = BlePowerMode.active}) async {
+  Future<void> start({BlePowerMode mode = BlePowerMode.active}) =>
+      _runExclusive(() => _internalStart(mode: mode));
+
+  Future<void> _internalStart({BlePowerMode mode = BlePowerMode.active}) async {
     if (_isAvailable) return;
 
     _powerMode = mode;
@@ -70,7 +92,19 @@ class NativeBleLinkAdapter implements TransportPort, PowerPolicyPort {
   }
 
   @override
-  Future<void> stop() async {
+  Future<void> startScan() => _runExclusive(() async {
+    if (!_isAvailable) {
+      await _internalStart(mode: BlePowerMode.active);
+    }
+    try {
+      await _methodChannel.invokeMethod('startScan');
+    } catch (_) {}
+  });
+
+  @override
+  Future<void> stop() => _runExclusive(() => _internalStop());
+
+  Future<void> _internalStop() async {
     try {
       await _methodChannel.invokeMethod('stop');
     } catch (_) {
@@ -117,7 +151,7 @@ class NativeBleLinkAdapter implements TransportPort, PowerPolicyPort {
   }
 
   @override
-  Future<void> setPowerMode(BlePowerMode mode) async {
+  Future<void> setPowerMode(BlePowerMode mode) => _runExclusive(() async {
     _powerMode = mode;
     if (_isAvailable) {
       try {
@@ -128,7 +162,7 @@ class NativeBleLinkAdapter implements TransportPort, PowerPolicyPort {
         throw StateError('Failed to update BLE power mode: ${e.message}');
       }
     }
-  }
+  });
 
   void _subscribeToNativeEvents() {
     _nativeEventSubscription?.cancel();

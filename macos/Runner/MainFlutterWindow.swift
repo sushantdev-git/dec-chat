@@ -151,14 +151,27 @@ class BLECentralController: NSObject, CBCentralManagerDelegate, CBPeripheralDele
         ])
     }
     
-    func startScanning() {
+    func startScanning(allowDuplicates: Bool = false) {
         shouldBeScanning = true
         guard centralManager.state == .poweredOn else { return }
         isScanning = true
         centralManager.scanForPeripherals(
             withServices: [BLEConstants.serviceUUID],
-            options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+            options: [CBCentralManagerScanOptionAllowDuplicatesKey: allowDuplicates]
         )
+    }
+    
+    func retrieveConnectedPeripherals() -> [CBPeripheral] {
+        guard centralManager.state == .poweredOn else { return [] }
+        let peripherals = centralManager.retrieveConnectedPeripherals(withServices: [BLEConstants.serviceUUID])
+        for peripheral in peripherals {
+            if connectedPeripherals[peripheral.identifier] == nil {
+                connectedPeripherals[peripheral.identifier] = peripheral
+                peripheral.delegate = self
+                centralManager.connect(peripheral, options: nil)
+            }
+        }
+        return peripherals
     }
     
     func stopScanning() {
@@ -296,6 +309,17 @@ class BLERadioCoordinator: BLEPeripheralDelegate, BLECentralDelegate {
         peripheralController.startAdvertising()
         centralController.startScanning()
         applyDutyCycle()
+    }
+    
+    func restartScan() {
+        self.powerMode = .active
+        dutyCycleTimer?.invalidate()
+        dutyCycleTimer = nil
+        
+        peripheralController.startAdvertising()
+        _ = centralController.retrieveConnectedPeripherals()
+        centralController.stopScanning()
+        centralController.startScanning(allowDuplicates: true)
     }
     
     func stop() {
@@ -478,6 +502,10 @@ class BlePlatformChannel: NSObject, FlutterStreamHandler, BLERadioCoordinatorDel
             
         case "getConnectedPeers":
             result(Array(radioCoordinator.connectedPeers))
+            
+        case "startScan":
+            radioCoordinator.restartScan()
+            result(true)
             
         default:
             result(FlutterMethodNotImplemented)

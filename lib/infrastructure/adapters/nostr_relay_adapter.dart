@@ -69,17 +69,24 @@ class NostrRelayAdapter implements TransportPort {
   }
 
   @override
+  Future<void> startScan() async {
+    if (!_isRunning) {
+      await start();
+    }
+  }
+
+  @override
   Future<void> stop() async {
     _isRunning = false;
 
     // Cancel all pending reconnect timers
-    for (final timer in _reconnectTimers.values) {
+    for (final timer in _reconnectTimers.values.toList()) {
       timer.cancel();
     }
     _reconnectTimers.clear();
 
     // Close all subscriptions and channels gracefully
-    for (final entry in _relays.entries) {
+    for (final entry in _relays.entries.toList()) {
       final url = entry.key;
       final channel = entry.value;
 

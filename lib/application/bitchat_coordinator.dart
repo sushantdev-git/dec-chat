@@ -125,6 +125,16 @@ class BitchatCoordinator {
     });
   }
 
+  /// Forces a fresh radio scan burst to discover nearby peers and broadcasts presence.
+  Future<void> startScan() async {
+    if (!_isStarted) {
+      await start();
+    }
+    seenCache.clear();
+    await transportPort.startScan();
+    await broadcastPresence();
+  }
+
   /// Stops all radio links, mesh routines, and subscriptions.
   Future<void> stop() async {
     _isStarted = false;
@@ -140,6 +150,15 @@ class BitchatCoordinator {
     await panicZeroizationService.executeZeroization(activeKeyPair: activeKeyPair);
   }
 }
+
+/// Persistent native BLE link adapter provider decoupled from ephemeral identity churn.
+final nativeBleLinkAdapterProvider = Provider<NativeBleLinkAdapter>((ref) {
+  final ble = NativeBleLinkAdapter();
+  ref.onDispose(() {
+    ble.dispose();
+  });
+  return ble;
+});
 
 /// Global provider for the transport port (defaults to NostrRelayAdapter on Web, MessageRouter on native).
 final transportPortProvider = Provider<TransportPort>((ref) {
@@ -164,7 +183,7 @@ final transportPortProvider = Provider<TransportPort>((ref) {
     return nostr;
   }
 
-  final ble = NativeBleLinkAdapter();
+  final ble = ref.watch(nativeBleLinkAdapterProvider);
   final router = MessageRouter(
     bleTransport: ble,
     nostrTransport: nostr,

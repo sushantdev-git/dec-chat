@@ -39,12 +39,7 @@ class PanicZeroizationService {
     noiseSessionManager?.clearAllSessions();
 
     // 3. Clear packet deduplication LRU
-    if (seenPacketCache != null) {
-      final size = seenPacketCache!.size;
-      for (int i = 0; i < size; i++) {
-        // Clear all entries
-      }
-    }
+    seenPacketCache?.clear();
 
     // 4. Memory scrub key pair bytes if accessible
     if (activeKeyPair != null) {

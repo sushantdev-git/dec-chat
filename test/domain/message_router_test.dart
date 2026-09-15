@@ -97,6 +97,13 @@ class MockBleTransport implements TransportPort {
     wasStarted = true;
   }
 
+  bool wasScanStarted = false;
+
+  @override
+  Future<void> startScan() async {
+    wasScanStarted = true;
+  }
+
   @override
   Future<void> stop() async {
     wasStopped = true;
@@ -301,6 +308,17 @@ void main() {
       expect(router.locationService.isJoined('#9q8yy'), isFalse);
       expect(nostrAdapter.activeLocationChannels.isEmpty, isTrue);
       expect(mockWs.sentMessages.length, equals(9));
+    });
+
+    test('startScan triggers active BLE scanning and clears deduplication cache', () async {
+      await router.start();
+      router.seenCache.checkAndAdd('cached_packet_hash');
+      expect(router.seenCache.size, equals(1));
+
+      expect(mockBle.wasScanStarted, isFalse);
+      await router.startScan();
+      expect(mockBle.wasScanStarted, isTrue);
+      expect(router.seenCache.size, equals(0));
     });
   });
 }

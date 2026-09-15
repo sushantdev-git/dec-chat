@@ -26,6 +26,9 @@ class MockCourierTransport implements TransportPort {
   Future<void> start() async {}
 
   @override
+  Future<void> startScan() async {}
+
+  @override
   Future<void> stop() async {}
 
   @override

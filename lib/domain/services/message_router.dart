@@ -104,6 +104,15 @@ class MessageRouter implements TransportPort {
   }
 
   @override
+  Future<void> startScan() async {
+    if (!_isRunning) {
+      await start();
+    }
+    seenCache.clear();
+    await bleTransport.startScan();
+  }
+
+  @override
   Future<void> stop() async {
     _isRunning = false;
 
@@ -112,6 +121,8 @@ class MessageRouter implements TransportPort {
 
     await _nostrSubscription?.cancel();
     _nostrSubscription = null;
+
+    seenCache.clear();
 
     await bleTransport.stop();
     await nostrTransport.stop();

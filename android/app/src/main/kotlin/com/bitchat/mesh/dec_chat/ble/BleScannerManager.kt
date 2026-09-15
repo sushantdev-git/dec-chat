@@ -40,7 +40,9 @@ class BleScannerManager(
     }
 
     fun startScanning() {
-        if (isScanning) return
+        if (isScanning) {
+            stopScanning()
+        }
         scanner = bluetoothAdapter?.bluetoothLeScanner
         val leScanner = scanner ?: return
 
